@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Market House — Tableau de bord Client</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-brand">🛵 Market House</div>
+    <div class="sidebar-user">
+      <div id="sb-avatar" class="avatar" style="margin-bottom:10px; width:40px; height:40px; font-size:1rem;"></div>
+      <div class="u-name" id="sb-name">—</div>
+      <div class="u-role"><span class="badge badge-client">Client</span></div>
+    </div>
+    <div class="sidebar-nav">
+      <button class="nav-link active" onclick="showSection('markets')">
+        <span class="nav-icon">🏪</span> Marchés
+      </button>
+      <button class="nav-link" onclick="showSection('orders')">
+        <span class="nav-icon">📋</span> Mes commandes
+      </button>
+      <button class="nav-link" onclick="showSection('trends')">
+        <span class="nav-icon">🗣️</span> Tendances
+      </button>
+    </div>
+    <div class="sidebar-footer">
+      <button class="nav-link" onclick="toggleTheme()" title="Changer de thème">
+        <span class="nav-icon">🌓</span> Thème
+      </button>
+      <button class="nav-link" onclick="logout()" style="color:var(--danger)">
+        <span class="nav-icon">🚪</span> Déconnexion
+      </button>
+    </div>
+  </nav>
+
+  <!-- CONTENT -->
+  <div class="app-content">
+    <!-- MARKETS SECTION -->
+    <div id="section-markets" class="section active">
+      <div class="page-hero">
+        <h1>🛵 Choisissez votre marché</h1>
+        <p>Sélectionnez un marché du Mboa pour voir ses produits et constituer votre panier</p>
+        
+        <!-- ONBOARDING GUIDE -->
+        <div class="onboarding-steps">
+          <div class="onboard-step">
+            <div class="onboard-number">1</div>
+            <div class="onboard-text">Choisissez<br><span style="color:var(--text-muted)">votre marché</span></div>
+          </div>
+          <div class="onboard-step">
+            <div class="onboard-number">2</div>
+            <div class="onboard-text">Faites vos courses<br><span style="color:var(--text-muted)">dans les rayons</span></div>
+          </div>
+          <div class="onboard-step">
+            <div class="onboard-number">3</div>
+            <div class="onboard-text">Suivez le coursier<br><span style="color:var(--text-muted)">en temps réel</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="main">
+        <div id="markets-grid" class="grid grid-3">
+          <div style="text-align:center; padding:60px; color:var(--text-muted)">
+            <span class="spinner" style="width:32px;height:32px;border-width:3px;"></span>
+            <p style="margin-top:16px;">Chargement des marchés…</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ORDERS SECTION -->
+    <div id="section-orders" class="section">
+      <div class="page-hero">
+        <h1>📋 Mes commandes</h1>
+        <p>Suivez l'état de toutes vos commandes en temps réel</p>
+      </div>
+      <div class="main">
+        <div id="orders-list">
+          <div style="text-align:center; padding:40px; color:var(--text-muted)">
+            <span class="spinner" style="width:32px;height:32px;border-width:3px;"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRENDS SECTION -->
+    <div id="section-trends" class="section">
+      <div class="page-hero">
+        <h1>🗣️ Bruits du Marché</h1>
+        <p>Partagez et découvrez les tendances des prix et l'ambiance des marchés aujourd'hui. Dites-nous ce qui est moins cher !</p>
+      </div>
+      <div class="main">
+        <div class="grid grid-2" style="gap:24px;">
+          <!-- Post Trend Form -->
+          <div>
+            <div class="card" style="padding:24px;">
+              <h3 style="margin-bottom:16px;">Créer une publication</h3>
+              <form onsubmit="submitTrend(event)">
+                <div class="form-group">
+                  <label class="form-label">Sujet de la tendance</label>
+                  <select id="trend-type" class="form-control" required style="background:var(--bg2);">
+                    <option value="general">Général (Ambiance, Conseils)</option>
+                    <option value="price_down">📉 Prix en baisse (Bons plans)</option>
+                    <option value="price_up">📈 Prix en hausse (Alerte prix)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Votre message</label>
+                  <textarea id="trend-text" class="form-control" rows="3" placeholder="Ex: La tomate est très abordable au marché du Mfoundi ce matin !" required></textarea>
+                </div>
+                <div class="form-group" style="display:flex; align-items:center; gap:8px;">
+                  <input type="checkbox" id="trend-anon" style="width:18px;height:18px; cursor:pointer;">
+                  <label for="trend-anon" style="cursor:pointer; color:var(--text); font-size:0.9rem;">Publier anonymement</label>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full" id="btn-submit-trend">Publier</button>
+              </form>
+            </div>
+          </div>
+          <!-- Trends Feed -->
+          <div>
+            <h3 style="margin-bottom:16px;">Derniers avis <button class="btn btn-secondary btn-sm" style="float:right;" onclick="loadTrends()">↻</button></h3>
+            <div id="trends-feed" style="display:flex; flex-direction:column; gap:16px;">
+              <div style="text-align:center; padding:30px; color:var(--text-muted)"><span class="spinner"></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE BOTTOM NAVIGATION -->
+<div class="mobile-bottom-nav">
+  <button class="mobile-nav-item active" onclick="showSectionMobile('markets', this)">
+    <span class="mobile-nav-icon">🏪</span>
+    <span>Marchés</span>
+  </button>
+  <button class="mobile-nav-item" onclick="showSectionMobile('orders', this)">
+    <span class="mobile-nav-icon">📋</span>
+    <span>Commandes</span>
+  </button>
+  <button class="mobile-nav-item" onclick="showSectionMobile('trends', this)">
+    <span class="mobile-nav-icon">🗣️</span>
+    <span>Avis</span>
+  </button>
+  <button class="mobile-nav-item" onclick="toggleTheme()" title="Thème">
+    <span class="mobile-nav-icon">🌓</span>
+    <span>Thème</span>
+  </button>
+  <button class="mobile-nav-item" onclick="logout()" style="color:var(--danger)">
+    <span class="mobile-nav-icon">🚪</span>
+    <span>Quitter</span>
+  </button>
+</div>
+
+<!-- TRACKING MODAL -->
+<div class="modal-overlay" id="tracking-modal">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-header">
+      <h3>📍 Suivi de la course <span id="track-order-id" style="color:var(--text-muted); font-size:0.9rem;"></span></h3>
+      <button class="modal-close" onclick="closeTrackingModal()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:0;">
+      <!-- Map Container -->
+      <div id="tracking-map" style="width:100%; height:300px; background:var(--card-border); z-index:1;"></div>
+      
+      <!-- Courier Info -->
+      <div style="padding:24px 28px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="avatar" style="width:48px; height:48px; font-size:1.2rem;" id="track-c-avatar">🚴</div>
+            <div>
+              <div style="font-weight:700; font-size:1.1rem;" id="track-c-name">En attente de coursier</div>
+              <div style="color:var(--text-muted); font-size:0.85rem;" id="track-c-status">Recherche en cours...</div>
+            </div>
+          </div>
+          <a href="#" class="btn btn-secondary btn-sm" id="btn-call-courier" style="display:none;">📞 Appeler</a>
+        </div>
+        
+        <div class="card" style="padding:16px; margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+             <span style="font-weight:600; font-size:0.9rem;">Statut : <span id="track-o-status" class="badge"></span></span>
+             <span style="font-size:1.1rem; font-weight:800; color:var(--accent2);" id="track-o-total">0 F</span>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-full" id="btn-edit-order" onclick="openEditOrder()" style="margin-bottom:8px;">✏️ Modifier ma commande</button>
+        <button class="btn btn-success btn-full" id="btn-confirm-delivery" onclick="confirmDelivery()" style="display:none;font-weight:700;box-shadow:0 6px 16px rgba(16,185,129,0.3);">✅ Certifier la réception de la livraison</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+const user = requireAuth('client');
+if (user) {
+  const initials = user.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('sb-avatar').textContent = initials;
+  document.getElementById('sb-name').textContent = user.name;
+}
+
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  if (event && event.currentTarget) event.currentTarget.classList.add('active');
+  
+  // Update mobile nav active state as well
+  document.querySelectorAll('.mobile-nav-item').forEach(l => l.classList.remove('active'));
+  const mobL = Array.from(document.querySelectorAll('.mobile-nav-item')).find(el => el.getAttribute('onclick').includes(name));
+  if (mobL) mobL.classList.add('active');
+  
+  if (name === 'orders') loadOrders();
+}
+
+function showSectionMobile(name, element) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.mobile-nav-item').forEach(l => l.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  element.classList.add('active');
+  
+  // Sync desktop sidebar
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  const dtopL = Array.from(document.querySelectorAll('.nav-link')).find(el => el.getAttribute('onclick').includes(name));
+  if (dtopL) dtopL.classList.add('active');
+
+  if (name === 'orders') loadOrders();
+  if (name === 'trends') loadTrends();
+}
+
+function toast(msg, type='success') {
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.innerHTML = `<span>${type==='success'?'✅':type==='error'?'❌':'ℹ️'}</span> ${msg}`;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+const statusLabels = { pending:'En attente', assigned:'Assignée', in_progress:'En cours', delivered:'Arrivée (À valider)', completed:'Validée' };
+const statusEmoji = { pending:'⏳', assigned:'🚴', in_progress:'📦', delivered:'📍', completed:'✅' };
+
+async function loadMarkets() {
+  try {
+    const markets = await api.get('/api/markets');
+    const grid = document.getElementById('markets-grid');
+    if (!markets.length) {
+      grid.innerHTML = '<div class="empty-state"><span class="empty-icon">🛵</span><h3>Aucun marché disponible</h3></div>';
+      return;
+    }
+    const emojis = ['🥬', '🐟', '🍅', '🌽', '🛒', '🥩'];
+    grid.innerHTML = markets.map((m, i) => `
+      <div class="market-card" onclick="goToMarket(${m.id}, '${escHtml(m.name)}')">
+        <div class="market-img">${emojis[i % emojis.length]}</div>
+        <div class="market-body">
+          <div class="card-title">${escHtml(m.name)}</div>
+          <div style="font-size:0.83rem; color:var(--text-muted); margin-bottom:10px;">📍 ${escHtml(m.location)}</div>
+          <div style="font-size:0.82rem; color:var(--text-muted); margin-bottom:14px;">${escHtml(m.description||'')}</div>
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-size:0.8rem; color:var(--success);">⏰ ${escHtml(m.opening_hours||'')}</span>
+            <span class="btn btn-primary btn-sm">Voir les produits →</span>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    toast('Erreur chargement marchés: ' + e.message, 'error');
+  }
+}
+
+function goToMarket(id, name) {
+  sessionStorage.setItem('mh_market_id', id);
+  sessionStorage.setItem('mh_market_name', name);
+  window.location.href = '/client/market.html';
+}
+
+let map = null;
+let markerMarket = null;
+let markerCourier = null;
+let trackingInterval = null;
+let currentTrackedOrder = null;
+
+function openTrackingModal(orderId) {
+  const o = allClientOrders.find(x => x.id === orderId);
+  if (!o) return;
+  currentTrackedOrder = o;
+
+  document.getElementById('track-order-id').textContent = '#' + o.id;
+  document.getElementById('track-o-status').textContent = statusLabels[o.status] || o.status;
+  document.getElementById('track-o-status').className = 'badge badge-' + o.status;
+  document.getElementById('track-o-total').textContent = (o.total_estimate||0).toLocaleString() + ' F';
+
+  const cName = document.getElementById('track-c-name');
+  const cAvatar = document.getElementById('track-c-avatar');
+  const cStatus = document.getElementById('track-c-status');
+  const btnCall = document.getElementById('btn-call-courier');
+  const btnEdit = document.getElementById('btn-edit-order');
+
+  if (o.status === 'assigned' || o.status === 'in_progress') {
+    btnEdit.style.display = 'block';
+  } else {
+    btnEdit.style.display = 'none';
+  }
+
+  if (o.courier) {
+    cName.textContent = o.courier;
+    cAvatar.textContent = o.courier.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+    if (o.status === 'delivered') cStatus.textContent = 'Arrivé à destination !';
+    else if (o.status === 'completed') cStatus.textContent = 'Course terminée';
+    else cStatus.textContent = o.status === 'in_progress' ? 'En route...' : 'Au marché';
+    btnCall.style.display = 'inline-flex';
+  } else {
+    cName.textContent = 'En attente de coursier';
+    cAvatar.textContent = '⏳';
+    cStatus.textContent = 'Recherche en cours...';
+    btnCall.style.display = 'none';
+  }
+
+  // Confirm Delivery Button
+  const btnConfirm = document.getElementById('btn-confirm-delivery');
+  if (o.status === 'delivered') {
+    btnConfirm.style.display = 'block';
+  } else {
+    btnConfirm.style.display = 'none';
+  }
+
+  document.getElementById('tracking-modal').classList.add('open');
+  
+  // Initialize Map after modal is open to ensure correct sizing
+  setTimeout(() => initMap(o), 100);
+}
+
+async function confirmDelivery() {
+  if (!currentTrackedOrder) return;
+  const btn = document.getElementById('btn-confirm-delivery');
+  btn.innerHTML = '<span class="spinner"></span> Validation...';
+  btn.disabled = true;
+  try {
+    await api.post(`/api/orders/${currentTrackedOrder.id}/complete`);
+    toast("Réception confirmée ! Merci d'avoir utilisé Market House.", "success");
+    closeTrackingModal();
+    loadOrders(); // Refresh status
+  } catch(e) {
+    toast(e.message, 'error');
+  } finally {
+    btn.innerHTML = '✅ Certifier la réception de la livraison';
+    btn.disabled = false;
+  }
+}
+
+function closeTrackingModal() {
+  document.getElementById('tracking-modal').classList.remove('open');
+  if (trackingInterval) clearInterval(trackingInterval);
+}
+
+function initMap(order) {
+  if (!map) {
+    map = L.map('tracking-map').setView([3.8480, 11.5021], 13); // Yaoundé approx
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+      subdomains: 'abcd',
+      maxZoom: 20
+    }).addTo(map);
+  } else {
+    map.invalidateSize();
+  }
+
+  if (markerMarket) map.removeLayer(markerMarket);
+  if (markerCourier) map.removeLayer(markerCourier);
+  if (trackingInterval) clearInterval(trackingInterval);
+
+  // Mock Market Location
+  const mLat = 3.8480 + (Math.random() * 0.02 - 0.01);
+  const mLng = 11.5021 + (Math.random() * 0.02 - 0.01);
+  markerMarket = L.marker([mLat, mLng], {
+    icon: L.divIcon({className: 'map-icon', html: '🏪', iconSize: [30,30], iconAnchor:[15,30]})
+  }).addTo(map).bindPopup(escHtml(order.market));
+
+  map.setView([mLat, mLng], 15);
+
+  if (order.courier && !['delivered', 'completed'].includes(order.status)) {
+    // Mock Courier Location starting near market
+    let cLat = mLat + (Math.random() * 0.005 - 0.0025);
+    let cLng = mLng + (Math.random() * 0.005 - 0.0025);
+    markerCourier = L.marker([cLat, cLng], {
+      icon: L.divIcon({className: 'map-icon', html: '🚴', iconSize: [30,30], iconAnchor:[15,30]})
+    }).addTo(map).bindPopup(escHtml(order.courier));
+
+    trackingInterval = setInterval(() => {
+      cLat += (Math.random() * 0.0004 - 0.0002);
+      cLng += (Math.random() * 0.0004 - 0.0002);
+      markerCourier.setLatLng([cLat, cLng]);
+    }, 2000);
+  }
+}
+
+// Global variable to keep track of orders for the edit feature
+let allClientOrders = [];
+
+async function loadOrders() {
+  const container = document.getElementById('orders-list');
+  try {
+    const orders = await api.get('/api/orders');
+    allClientOrders = orders; // Save globally
+    if (!orders.length) {
+      container.innerHTML = `<div class="empty-state"><span class="empty-icon">📋</span><h3>Aucune course</h3><p>Passez votre première commande au marché !</p><a href="#" class="btn btn-primary" style="margin-top:16px;" onclick="showSection2('markets')">Choisir un marché</a></div>`;
+      return;
+    }
+    container.innerHTML = orders.map(o => `
+      <div class="order-card">
+        <div class="order-card-header" onclick="toggleOrder(this)">
+          <div style="display:flex; align-items:center; gap:14px; flex:1;">
+            <div style="font-size:1.8rem;">${statusEmoji[o.status]||'📦'}</div>
+            <div>
+              <div style="font-weight:700;">Commande #${o.id} — ${escHtml(o.market)}</div>
+              <div style="font-size:0.82rem; color:var(--text-muted);">${new Date(o.created_at).toLocaleDateString('fr-FR', {day:'2-digit',month:'long',year:'numeric', hour:'2-digit', minute:'2-digit'})}</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px;">
+            ${o.delivery_eta && !['delivered', 'completed'].includes(o.status) ? `<div style="font-size:0.8rem; background:rgba(245,158,11,0.15); color:var(--warning); padding:4px 8px; border-radius:6px; font-weight:700; border:1px solid rgba(245,158,11,0.3); display:flex; align-items:center; gap:4px;">⏱ <span class="eta-timer" data-eta="${o.delivery_eta}">...</span></div>` : ''}
+            <span style="font-weight:700; color:var(--accent2); font-size:1.1rem;">${o.total_estimate?.toLocaleString()} F</span>
+          </div>
+        </div>
+        
+        <!-- NEW VISIBILITY: Stepper + Map Button immediately visible without expanding -->
+        <div style="padding:0 24px 16px; border-bottom:1px solid rgba(255,255,255,0.04);">
+          <!-- PROGRESS STEPPER -->
+          <div class="stepper" style="max-width:500px; margin:0 auto 16px;">
+            <div class="step ${['pending','assigned','in_progress','delivered','completed'].includes(o.status) ? 'done' : ''}">
+              <div class="step-icon">⏳</div><div class="step-label">Attente</div>
+            </div>
+            <div class="step ${['assigned','in_progress','delivered','completed'].includes(o.status) ? 'done' : ''} ${o.status==='assigned'?'active':''}">
+              <div class="step-icon">🚴</div><div class="step-label">Assignée</div>
+            </div>
+            <div class="step ${['in_progress','delivered','completed'].includes(o.status) ? 'done' : ''} ${o.status==='in_progress'?'active':''}">
+              <div class="step-icon">📦</div><div class="step-label">En cours</div>
+            </div>
+            <div class="step ${['delivered','completed'].includes(o.status) ? 'done' : ''} ${o.status==='delivered'?'active':''}">
+              <div class="step-icon">📍</div><div class="step-label">Arrivée</div>
+            </div>
+            <div class="step ${o.status==='completed'?'done':''}">
+              <div class="step-icon">✅</div><div class="step-label">Validée</div>
+            </div>
+          </div>
+          
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+             <span></span> <!-- Empty space for flex alignment -->
+             <button class="btn btn-primary" onclick="openTrackingModal(${o.id})">📍 Suivre la livraison sur la carte</button>
+          </div>
+        </div>
+
+        <!-- HIDDEN ACCORDION FOR ITEMS LIST -->
+        <div style="padding:12px 24px; text-align:center; cursor:pointer; color:var(--text-muted); font-size:0.85rem; background:rgba(255,255,255,0.02);" onclick="toggleOrder(this)">
+          Voir le détail des produits ▼
+        </div>
+        <div class="order-card-body">
+          ${o.courier ? `<p style="margin-bottom:12px; font-size:0.88rem; color:var(--text-muted);">🚴 Coursier : <strong style="color:var(--text);">${escHtml(o.courier)}</strong></p>` : ''}
+          ${o.notes ? `<p style="margin-bottom:12px; font-size:0.88rem; color:var(--text-muted);">📝 Note : ${escHtml(o.notes)}</p>` : ''}
+          <ul class="order-items-list">
+            ${o.items.map(it => `
+              <li>
+                <span>${escHtml(it.product)} × ${it.quantity} ${escHtml(it.unit)}</span>
+                <span style="color:var(--accent2); font-weight:600;">${(it.price * it.quantity).toLocaleString()} F</span>
+              </li>
+            `).join('')}
+          </ul>
+          <div style="display:flex; justify-content:flex-end; margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06); font-weight:700; font-size:1.05rem;">
+            Total estimé : <span style="color:var(--accent2); margin-left:8px;">${o.total_estimate?.toLocaleString()} FCFA</span>
+          </div>
+        </div>
+      </div>
+    `).join('');
+    
+    // Start interval block for ETA updates
+    updateETAs();
+    if (!window.etaInterval) {
+      window.etaInterval = setInterval(updateETAs, 10000); // UI ref count 10s
+    }
+  } catch(e) {
+    container.innerHTML = `<div class="empty-state"><span class="empty-icon">⚠️</span><h3>Erreur : ${e.message}</h3></div>`;
+  }
+}
+
+function showSection2(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  document.querySelectorAll('.nav-link')[0].classList.add('active');
+}
+
+function toggleOrder(header) {
+  const body = header.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+function openEditOrder() {
+  if (!currentTrackedOrder) return;
+  // Use sessionStorage to inform the market page that we're editing an existing order
+  sessionStorage.setItem('mh_edit_order_id', currentTrackedOrder.id);
+  sessionStorage.setItem('mh_edit_order_items', JSON.stringify(currentTrackedOrder.items));
+  // Look up the market ID from the list
+  api.get('/api/markets').then(markets => {
+    const m = markets.find(x => x.name === currentTrackedOrder.market);
+    if (m) {
+      sessionStorage.setItem('mh_market_id', m.id);
+      sessionStorage.setItem('mh_market_name', m.name);
+      window.location.href = '/client/market.html';
+    }
+  });
+}
+
+function updateETAs() {
+  document.querySelectorAll('.eta-timer').forEach(el => {
+    const etaStr = el.getAttribute('data-eta');
+    if (!etaStr) return;
+    const etaDate = new Date(etaStr + 'Z'); // Convert to local TZ based on UTC response
+    const diffMs = etaDate - new Date();
+    
+    if (diffMs <= 0) {
+      el.textContent = "Imminent";
+      el.style.color = "var(--danger)";
+    } else {
+      const mins = Math.ceil(diffMs / 60000);
+      el.textContent = `~${mins} min`;
+    }
+  });
+}
+
+function escHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function loadTrends() {
+  const container = document.getElementById('trends-feed');
+  try {
+    const trends = await api.get('/api/trends');
+    if (!trends.length) {
+      container.innerHTML = '<div class="empty-state"><span class="empty-icon">🤫</span><h3>Aucun avis partagé</h3><p>Soyez le premier à donner votre avis sur les prix aujourd\'hui !</p></div>';
+      return;
+    }
+    
+    container.innerHTML = trends.map(t => `
+      <div class="card" style="padding:16px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:0.85rem;">
+          <strong style="color:var(--text); display:flex; align-items:center; gap:6px;">
+            <div class="avatar" style="width:24px; height:24px; font-size:0.7rem; background:${t.author_name === 'Anonyme' ? 'var(--card-border)' : 'var(--primary)'}">${t.author_name === 'Anonyme' ? '👤' : t.author_name.charAt(0)}</div>
+            ${escHtml(t.author_name)}
+          </strong>
+          <span style="color:var(--text-muted);">${new Date(t.created_at).toLocaleDateString('fr-FR', {hour:'2-digit', minute:'2-digit'})}</span>
+        </div>
+        ${t.trend_type === 'price_down' ? '<div style="color:var(--success); font-weight:700; font-size:0.82rem; margin-bottom:6px;">📉 Prix en baisse</div>' : ''}
+        ${t.trend_type === 'price_up' ? '<div style="color:var(--danger); font-weight:700; font-size:0.82rem; margin-bottom:6px;">📈 Prix en hausse</div>' : ''}
+        <p style="color:var(--text); line-height:1.5; font-size:0.95rem;">${escHtml(t.text)}</p>
+      </div>
+    `).join('');
+  } catch(e) {
+    container.innerHTML = `<div class="empty-state"><span class="empty-icon">⚠️</span><h3>Erreur: ${e.message}</h3></div>`;
+  }
+}
+
+async function submitTrend(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-submit-trend');
+  btn.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true;
+  
+  try {
+    const payload = {
+      text: document.getElementById('trend-text').value,
+      trend_type: document.getElementById('trend-type').value,
+      is_anonymous: document.getElementById('trend-anon').checked
+    };
+    await api.post('/api/trends', payload);
+    document.getElementById('trend-text').value = '';
+    toast('Avis partagé avec succès !', 'success');
+    loadTrends();
+  } catch(e) {
+    toast('Erreur: ' + e.message, 'error');
+  } finally {
+    btn.innerHTML = 'Publier';
+    btn.disabled = false;
+  }
+}
+
+loadMarkets();
+
+// Handle returning to specific tabs
+if (sessionStorage.getItem('goto_orders') === 'true') {
+  sessionStorage.removeItem('goto_orders');
+  // Small delay to ensure DOM is ready and loadMarkets doesn't override
+  setTimeout(() => {
+    showSection('orders');
+  }, 100);
+}
+</script>
+</body>
+</html>

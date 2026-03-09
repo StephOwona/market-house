@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Market House — Tableau de bord Coursier</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-brand">🛵 Market House</div>
+    <div class="sidebar-user">
+      <div id="sb-avatar" class="avatar" style="margin-bottom:10px; width:40px; height:40px; font-size:1rem; background:linear-gradient(135deg,#10b981,#059669);"></div>
+      <div class="u-name" id="sb-name">—</div>
+      <div class="u-role"><span class="badge badge-courier">Coursier</span></div>
+    </div>
+    <div class="sidebar-nav">
+      <button class="nav-link active" onclick="filterOrders('all')">
+        <span class="nav-icon">📋</span> Toutes mes courses
+      </button>
+      <button class="nav-link" onclick="filterOrders('assigned')">
+        <span class="nav-icon">⏳</span> Nouvelles
+      </button>
+      <button class="nav-link" onclick="filterOrders('in_progress')">
+        <span class="nav-icon">📦</span> En cours
+      </button>
+      <button class="nav-link" onclick="filterOrders('delivered')">
+        <span class="nav-icon">✅</span> Historique
+      </button>
+    </div>
+    <div class="sidebar-footer">
+      <button class="nav-link" onclick="toggleTheme()" title="Changer de thème">
+        <span class="nav-icon">🌓</span> Thème
+      </button>
+      <button class="nav-link" onclick="logout()" style="color:var(--danger)">
+        <span class="nav-icon">🚴</span> Déconnexion
+      </button>
+    </div>
+  </nav>
+
+  <!-- CONTENT -->
+  <div class="app-content">
+    <div class="page-hero">
+      <h1>🚴 Mes courses assignées</h1>
+      <p>Gérez et mettez à jour vos livraisons en temps réel</p>
+    </div>
+
+    <!-- STATS -->
+    <div class="main">
+      <div class="grid grid-4" style="margin-bottom:28px;" id="courier-stats">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(59,130,246,0.15); color:var(--info);">📋</div>
+          <div><div class="stat-value" id="s-total">—</div><div class="stat-label">Total assignées</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(245,158,11,0.15); color:var(--warning);">⏳</div>
+          <div><div class="stat-value" id="s-new">—</div><div class="stat-label">Nouvelles</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(108,99,255,0.15); color:var(--accent2);">📦</div>
+          <div><div class="stat-value" id="s-progress">—</div><div class="stat-label">En cours</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(16,185,129,0.15); color:var(--success);">✅</div>
+          <div><div class="stat-value" id="s-done">—</div><div class="stat-label">Terminées</div></div>
+        </div>
+      </div>
+
+      <!-- ORDERS -->
+      <div id="orders-container">
+        <div style="text-align:center; padding:60px; color:var(--text-muted)">
+          <span class="spinner" style="width:32px;height:32px;border-width:3px;"></span>
+          <p style="margin-top:12px;">Chargement de vos courses…</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS UPDATE MODAL -->
+<div class="modal-overlay" id="status-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Mettre à jour le statut</h3>
+      <button class="modal-close" onclick="closeStatusModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-muted); margin-bottom:20px;">Sélectionnez le nouveau statut pour la commande #<span id="modal-order-id"></span> :</p>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <button class="btn btn-secondary" style="justify-content:flex-start; gap:16px; padding:16px;" onclick="updateStatus('in_progress')">
+          <span style="font-size:1.5rem;">📦</span>
+          <div style="text-align:left;"><div style="font-weight:700;">En cours de collecte</div><div style="font-size:0.82rem; color:var(--text-muted);">Je suis au marché</div></div>
+        </button>
+        <button class="btn btn-success" style="justify-content:flex-start; gap:16px; padding:16px;" onclick="updateStatus('delivered')">
+          <span style="font-size:1.5rem;">✅</span>
+          <div style="text-align:left;"><div style="font-weight:700;">Livraison effectuée</div><div style="font-size:0.82rem; opacity:0.8;">Le client a reçu sa commande</div></div>
+        </button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeStatusModal()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+const user = requireAuth('courier');
+if (user) {
+  const init = user.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('sb-avatar').textContent = init;
+  document.getElementById('sb-name').textContent = user.name;
+}
+
+let allOrders = [];
+let currentOrderId = null;
+let currentFilter = 'all';
+
+const statusLabels = { assigned:'Nouvelle', in_progress:'En cours', delivered:'Attente Validation', completed:'Terminée' };
+const statusEmoji = { assigned:'⏳', in_progress:'📦', delivered:'📍', completed:'✅' };
+
+function escHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function toast(msg, type='success') {
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.innerHTML = `<span>${type==='success'?'✅':type==='error'?'❌':'ℹ️'}</span> ${msg}`;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+async function loadOrders() {
+  try {
+    allOrders = await api.get('/api/courier/orders');
+    updateStats();
+    renderOrders();
+  } catch(e) {
+    document.getElementById('orders-container').innerHTML =
+      `<div class="empty-state"><span class="empty-icon">⚠️</span><h3>Erreur: ${e.message}</h3></div>`;
+  }
+}
+
+function updateStats() {
+  document.getElementById('s-total').textContent = allOrders.length;
+  document.getElementById('s-new').textContent = allOrders.filter(o => o.status === 'assigned').length;
+  document.getElementById('s-progress').textContent = allOrders.filter(o => o.status === 'in_progress').length;
+  document.getElementById('s-done').textContent = allOrders.filter(o => ['delivered', 'completed'].includes(o.status)).length;
+}
+
+function filterOrders(filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.nav-link').forEach((l, i) => {
+    l.classList.toggle('active', ['all','assigned','in_progress','delivered'][i] === filter);
+  });
+  renderOrders();
+}
+
+function renderOrders() {
+  const container = document.getElementById('orders-container');
+  let filtered = allOrders;
+  if(currentFilter === 'delivered') {
+    filtered = allOrders.filter(o => ['delivered', 'completed'].includes(o.status));
+  } else if (currentFilter !== 'all') {
+    filtered = allOrders.filter(o => o.status === currentFilter);
+  }
+
+  if (!filtered.length) {
+    container.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span><h3>Aucune course</h3><p>${currentFilter === 'all' ? "Aucune course ne vous a été assignée pour l'instant." : "Pas de course avec ce statut."}</p></div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(o => `
+    <div class="order-card" style="margin-bottom:16px;">
+      <div class="order-card-header" onclick="toggleDetail(this)">
+        <div style="display:flex; align-items:center; gap:14px; flex:1; min-width:0;">
+          <div style="font-size:2rem; flex-shrink:0;">${statusEmoji[o.status]||'📦'}</div>
+          <div style="min-width:0;">
+            <div style="font-weight:700; font-size:1rem;">Commande #${o.id}</div>
+            <div style="font-size:0.83rem; color:var(--text-muted);">👤 ${escHtml(o.client_name)} • ${new Date(o.created_at).toLocaleDateString('fr-FR')}</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
+          <span class="badge badge-${o.status}">${statusLabels[o.status]||o.status}</span>
+          <span style="font-weight:700; color:var(--accent2);">${o.total_estimate?.toLocaleString()||0} F</span>
+          <span style="color:var(--text-muted);">▼</span>
+        </div>
+      </div>
+      <div class="order-card-body" style="padding:0 24px 20px;">
+        <div class="grid grid-2" style="gap:16px; margin-bottom:20px;">
+          <div style="background:var(--bg3); padding:14px; border-radius:10px;">
+            <div style="font-size:0.75rem; text-transform:uppercase; color:var(--text-muted); font-weight:600; margin-bottom:8px;">📍 Marché</div>
+            <div style="font-weight:600;">${escHtml(o.market)}</div>
+            <div style="font-size:0.83rem; color:var(--text-muted);">${escHtml(o.market_location)}</div>
+          </div>
+          <div style="background:var(--bg3); padding:14px; border-radius:10px;">
+            <div style="font-size:0.75rem; text-transform:uppercase; color:var(--text-muted); font-weight:600; margin-bottom:8px;">👤 Client</div>
+            <div style="font-weight:600;">${escHtml(o.client_name)}</div>
+            <div style="font-size:0.83rem; color:var(--text-muted);">${escHtml(o.client_email)}</div>
+          </div>
+        </div>
+        ${o.notes ? `<div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); border-radius:10px; padding:12px; margin-bottom:16px; font-size:0.88rem;">📝 ${escHtml(o.notes)}</div>` : ''}
+        <div style="font-weight:700; margin-bottom:10px;">🛒 Liste de courses</div>
+        <ul class="order-items-list">
+          ${o.items.map(it => `
+            <li>
+              <span>▪ ${escHtml(it.product)}</span>
+              <span style="font-weight:600; color:var(--accent2);">${it.quantity} ${escHtml(it.unit)}</span>
+            </li>
+          `).join('')}
+        </ul>
+        ${!['delivered', 'completed'].includes(o.status) ? `
+          <div style="display:flex; justify-content:flex-end; margin-top:20px;">
+            <button class="btn btn-primary" onclick="openStatusModal(${o.id})">
+              📬 Mettre à jour le statut
+            </button>
+          </div>
+        ` : `
+          <div style="margin-top:16px; padding:12px; background:rgba(16,185,129,0.1); border-radius:10px; text-align:center; color:var(--success); font-weight:600;">
+            ${o.status === 'completed' ? '✅ Le client a validé la réception !' : '📍 Livraison effectuée. En attente de validation client.'}
+          </div>
+        `}
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleDetail(header) {
+  const body = header.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+function openStatusModal(orderId) {
+  currentOrderId = orderId;
+  document.getElementById('modal-order-id').textContent = orderId;
+  document.getElementById('status-modal').classList.add('open');
+}
+
+function closeStatusModal() {
+  document.getElementById('status-modal').classList.remove('open');
+  currentOrderId = null;
+}
+
+async function updateStatus(status) {
+  try {
+    await api.put(`/api/courier/orders/${currentOrderId}/status`, { status });
+    closeStatusModal();
+    toast(status === 'delivered' ? '✅ Livraison confirmée !' : '📦 Statut mis à jour');
+    await loadOrders();
+  } catch(e) {
+    toast('Erreur: ' + e.message, 'error');
+  }
+}
+
+loadOrders();
+setInterval(loadOrders, 30000); // Auto-refresh every 30s
+</script>
+</body>
+</html>

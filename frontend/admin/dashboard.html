@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Market House — Administration</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-brand">🛵 Market House</div>
+    <div class="sidebar-user">
+      <div class="avatar" id="sb-avatar" style="margin-bottom:10px; width:40px; height:40px; font-size:1rem; background:linear-gradient(135deg,#ef4444,#dc2626);"></div>
+      <div class="u-name" id="sb-name">—</div>
+      <div class="u-role"><span class="badge badge-admin">Administrateur</span></div>
+    </div>
+    <div class="sidebar-nav">
+      <button class="nav-link active" id="nav-overview" onclick="showSection('overview')"><span class="nav-icon">📊</span> Tableau de bord</button>
+      <button class="nav-link" id="nav-orders" onclick="showSection('orders')"><span class="nav-icon">📋</span> Commandes</button>
+      <button class="nav-link" id="nav-users" onclick="showSection('users')"><span class="nav-icon">👥</span> Utilisateurs</button>
+      <button class="nav-link" id="nav-markets" onclick="showSection('markets')"><span class="nav-icon">🏪</span> Marchés</button>
+    </div>
+    <div class="sidebar-footer">
+      <button class="nav-link" onclick="toggleTheme()" title="Changer de thème"><span class="nav-icon">🌓</span> Thème</button>
+      <button class="nav-link" onclick="logout()" style="color:var(--danger)"><span class="nav-icon">🚪</span> Déconnexion</button>
+    </div>
+  </nav>
+
+  <div class="app-content">
+
+    <!-- ===== OVERVIEW ===== -->
+    <div id="section-overview" class="section active">
+      <div class="page-hero"><h1>📊 Tableau de bord</h1><p>Vue d'ensemble de la plateforme</p></div>
+      <div class="main">
+        <div class="grid grid-4" style="margin-bottom:32px;" id="stats-grid">
+          <div class="stat-card"><div class="stat-icon" style="background:rgba(59,130,246,0.12);color:var(--info);">👥</div><div><div class="stat-value" id="st-users">—</div><div class="stat-label">Utilisateurs</div></div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:rgba(108,99,255,0.12);color:var(--accent2);">🛒</div><div><div class="stat-value" id="st-clients">—</div><div class="stat-label">Clients</div></div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:rgba(16,185,129,0.12);color:var(--success);">🚴</div><div><div class="stat-value" id="st-couriers">—</div><div class="stat-label">Coursiers</div></div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:rgba(245,158,11,0.12);color:var(--warning);">📦</div><div><div class="stat-value" id="st-orders">—</div><div class="stat-label">Commandes</div></div></div>
+        </div>
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="card-title">⏳ Commandes en attente</div>
+            <div class="card-sub">À assigner à un coursier</div>
+            <div id="pending-preview"></div>
+            <button class="btn btn-secondary btn-sm" style="margin-top:12px;" onclick="showSection('orders')">Voir toutes les commandes →</button>
+          </div>
+          <div class="card">
+            <div class="card-title">🚴 Coursiers actifs</div>
+            <div class="card-sub">Disponibles pour les courses</div>
+            <div id="couriers-preview"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ORDERS ===== -->
+    <div id="section-orders" class="section">
+      <div class="page-hero">
+        <h1>📋 Gestion des commandes</h1>
+        <p>Assignez les commandes aux coursiers</p>
+      </div>
+      <div class="main">
+        <div class="tabs">
+          <button class="tab-btn active" onclick="filterAdminOrders('all', this)">Toutes</button>
+          <button class="tab-btn" onclick="filterAdminOrders('pending', this)">⏳ En attente</button>
+          <button class="tab-btn" onclick="filterAdminOrders('assigned', this)">🚴 Assignées</button>
+          <button class="tab-btn" onclick="filterAdminOrders('in_progress', this)">📦 En cours</button>
+          <button class="tab-btn" onclick="filterAdminOrders('delivered', this)">✅ Livrées</button>
+        </div>
+        <div id="orders-table-container">
+          <div style="text-align:center;padding:60px;color:var(--text-muted)"><span class="spinner" style="width:32px;height:32px;border-width:3px;"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== USERS ===== -->
+    <div id="section-users" class="section">
+      <div class="page-hero"><h1>👥 Utilisateurs</h1><p>Gérez tous les comptes de la plateforme</p></div>
+      <div class="main">
+        <div class="tabs">
+          <button class="tab-btn active" onclick="filterUsers('all', this)">Tous</button>
+          <button class="tab-btn" onclick="filterUsers('client', this)">🛒 Clients</button>
+          <button class="tab-btn" onclick="filterUsers('courier', this)">🚴 Coursiers</button>
+          <button class="tab-btn" onclick="filterUsers('admin', this)">🔑 Admins</button>
+        </div>
+        <div style="overflow-x:auto; background:var(--card); border:1px solid var(--card-border); border-radius:var(--radius);">
+          <table class="orders-table" id="users-table">
+            <thead><tr><th>Utilisateur</th><th>Email</th><th>Rôle</th><th>Inscrit le</th><th>Actions</th></tr></thead>
+            <tbody id="users-tbody"><tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)"><span class="spinner"></span></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MARKETS ===== -->
+    <div id="section-markets" class="section">
+      <div class="page-hero" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+        <div><h1>🛵 Marchés & Produits</h1><p>Gérez les marchés et leurs catalogues</p></div>
+        <button class="btn btn-primary" onclick="openMarketModal()">+ Ajouter un marché</button>
+      </div>
+      <div class="main">
+        <div id="markets-admin-grid" class="grid grid-3">
+          <div style="text-align:center;padding:40px;color:var(--text-muted)"><span class="spinner" style="width:32px;height:32px;border-width:3px;"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ASSIGN MODAL -->
+<div class="modal-overlay" id="assign-modal">
+  <div class="modal">
+    <div class="modal-header"><h3>🚴 Assigner un coursier</h3><button class="modal-close" onclick="closeModal('assign-modal')">✕</button></div>
+    <div class="modal-body">
+      <p style="color:var(--text-muted); margin-bottom:16px;">Commande #<span id="assign-order-id" style="color:var(--accent2); font-weight:700;"></span></p>
+      <div class="form-group">
+        <label class="form-label">Choisir un coursier</label>
+        <select class="form-control" id="courier-select"></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('assign-modal')">Annuler</button>
+      <button class="btn btn-primary" onclick="confirmAssign()">Assigner</button>
+    </div>
+  </div>
+</div>
+
+<!-- MARKET MODAL (ADD/EDIT) -->
+<div class="modal-overlay" id="market-modal">
+  <div class="modal">
+    <div class="modal-header"><h3 id="market-modal-title">🛵 Nouveau marché</h3><button class="modal-close" onclick="closeModal('market-modal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="m-id" />
+      <div class="form-group"><label class="form-label">Nom du marché</label><input class="form-control" id="m-name" placeholder="Marché Central…" /></div>
+      <div class="form-group"><label class="form-label">Localisation</label><input class="form-control" id="m-loc" placeholder="Quartier, Ville" /></div>
+      <div class="form-group"><label class="form-label">Description</label><textarea class="form-control" id="m-desc" rows="2" placeholder="Description courte…"></textarea></div>
+      <div class="form-group"><label class="form-label">Horaires d'ouverture</label><input class="form-control" id="m-hours" placeholder="Lun-Sam: 7h-18h" /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('market-modal')">Annuler</button>
+      <button class="btn btn-primary" id="btn-save-market" onclick="saveMarket()">Créer le marché</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCT MODAL (ADD/EDIT) -->
+<div class="modal-overlay" id="product-modal">
+  <div class="modal">
+    <div class="modal-header"><h3 id="product-modal-title">+ Nouveau produit</h3><button class="modal-close" onclick="closeModal('product-modal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="p-id" />
+      <div class="form-group"><label class="form-label">Nom du produit</label><input class="form-control" id="p-name" placeholder="Tomates…" /></div>
+      <div class="grid grid-2" style="gap:12px;">
+        <div class="form-group"><label class="form-label">Prix (FCFA)</label><input class="form-control" id="p-price" type="number" placeholder="500" /></div>
+        <div class="form-group"><label class="form-label">Unité</label><input class="form-control" id="p-unit" placeholder="kg, pièce…" /></div>
+      </div>
+      <div class="form-group"><label class="form-label">Catégorie</label><input class="form-control" id="p-cat" placeholder="Fruits & Légumes…" /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('product-modal')">Annuler</button>
+      <button class="btn btn-primary" id="btn-save-product" onclick="saveProduct()">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+const user = requireAuth('admin');
+if (user) {
+  const init = user.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('sb-avatar').textContent = init;
+  document.getElementById('sb-name').textContent = user.name;
+}
+
+let allAdminOrders = [], allUsers = [], allCouriers = [], allMarkets = [];
+let assignOrderId = null, addProductMarketId = null, currentEditMarketId = null, currentEditProductId = null;
+let userFilter = 'all', orderFilter = 'all';
+
+const statusLabels = { pending:'En attente', assigned:'Assignée', in_progress:'En cours', delivered:'Arrivée (À valider)', completed:'Validée' };
+
+function escHtml(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function toast(msg, type='success') {
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.innerHTML = `<span>${type==='success'?'✅':type==='error'?'❌':'ℹ️'}</span> ${msg}`;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  if (name === 'orders' && !allAdminOrders.length) loadAdminOrders();
+  if (name === 'users' && !allUsers.length) loadUsers();
+  if (name === 'markets') loadAdminMarkets();
+}
+
+// ---- OVERVIEW ----
+async function loadOverview() {
+  try {
+    const [stats, orders, couriers] = await Promise.all([
+      api.get('/api/admin/stats'),
+      api.get('/api/admin/orders'),
+      api.get('/api/admin/couriers')
+    ]);
+    allAdminOrders = orders;
+    allCouriers = couriers;
+
+    document.getElementById('st-users').textContent = stats.users;
+    document.getElementById('st-clients').textContent = stats.clients;
+    document.getElementById('st-couriers').textContent = stats.couriers;
+    document.getElementById('st-orders').textContent = stats.orders;
+
+    const pending = orders.filter(o => o.status === 'pending').slice(0,5);
+    document.getElementById('pending-preview').innerHTML = pending.length
+      ? pending.map(o => `
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div>
+              <div style="font-size:0.9rem; font-weight:600;">Commande #${o.id} — ${escHtml(o.client_name)}</div>
+              <div style="font-size:0.78rem; color:var(--text-muted);">${escHtml(o.market)} • ${o.total_estimate?.toLocaleString()} F</div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="openAssignModal(${o.id})">Assigner</button>
+          </div>
+        `).join('')
+      : '<p style="color:var(--text-muted); font-size:0.88rem; margin-top:8px;">✅ Aucune commande en attente</p>';
+
+    document.getElementById('couriers-preview').innerHTML = couriers.length
+      ? couriers.map(c => `
+          <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div class="avatar" style="width:30px;height:30px;font-size:0.78rem;">${c.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2)}</div>
+            <div>
+              <div style="font-size:0.9rem; font-weight:600;">${escHtml(c.name)}</div>
+              <div style="font-size:0.78rem; color:var(--text-muted);">${escHtml(c.email)}</div>
+            </div>
+          </div>
+        `).join('')
+      : '<p style="color:var(--text-muted); font-size:0.88rem; margin-top:8px;">Aucun coursier inscrit</p>';
+  } catch(e) { toast('Erreur: ' + e.message, 'error'); }
+}
+
+// ---- ORDERS ----
+async function loadAdminOrders() {
+  if (!allAdminOrders.length) allAdminOrders = await api.get('/api/admin/orders');
+  renderAdminOrders();
+}
+
+function filterAdminOrders(filter, btn) {
+  orderFilter = filter;
+  document.querySelectorAll('.tabs .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAdminOrders();
+}
+
+function renderAdminOrders() {
+  const filtered = orderFilter === 'all' ? allAdminOrders : allAdminOrders.filter(o => o.status === orderFilter);
+  const html = filtered.length ? `
+    <div style="overflow-x:auto; background:var(--card); border:1px solid var(--card-border); border-radius:var(--radius);">
+      <table class="orders-table">
+        <thead><tr><th>#ID</th><th>Client</th><th>Marché</th><th>Articles</th><th>Total</th><th>Coursier</th><th>Statut</th><th>Date</th><th>Action</th></tr></thead>
+        <tbody>
+          ${filtered.map(o => `
+            <tr>
+              <td style="font-weight:700; color:var(--accent2);">#${o.id}</td>
+              <td><div style="font-weight:600;">${escHtml(o.client_name)}</div><div style="font-size:0.78rem;color:var(--text-muted);">${escHtml(o.client_email)}</div></td>
+              <td>${escHtml(o.market)}</td>
+              <td style="color:var(--text-muted);">${o.items_count} article(s)</td>
+              <td style="font-weight:700;">${o.total_estimate?.toLocaleString()||0} F</td>
+              <td>${o.courier_name ? `<span style="color:var(--success);">🚴 ${escHtml(o.courier_name)}</span>` : '<span style="color:var(--text-muted);">—</span>'}</td>
+              <td><span class="badge badge-${o.status}">${statusLabels[o.status]||o.status}</span></td>
+              <td style="font-size:0.82rem;color:var(--text-muted);">${new Date(o.created_at).toLocaleDateString('fr-FR')}</td>
+              <td>
+                ${o.status === 'pending' || o.status === 'assigned'
+                  ? `<button class="btn btn-primary btn-sm" onclick="openAssignModal(${o.id})">Assigner</button>`
+                  : `<span style="font-size:0.8rem;color:var(--text-muted);">—</span>`}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  ` : `<div class="empty-state"><span class="empty-icon">📋</span><h3>Aucune commande</h3></div>`;
+  document.getElementById('orders-table-container').innerHTML = html;
+}
+
+// ---- USERS ----
+async function loadUsers() {
+  try {
+    allUsers = await api.get('/api/admin/users');
+    renderUsers();
+  } catch(e) { toast('Erreur: ' + e.message, 'error'); }
+}
+
+function filterUsers(filter, btn) {
+  userFilter = filter;
+  document.querySelectorAll('#section-users .tabs .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderUsers();
+}
+
+function renderUsers() {
+  const filtered = userFilter === 'all' ? allUsers : allUsers.filter(u => u.role === userFilter);
+  const roleEmoji = { client:'🛒', courier:'🚴', admin:'🔑' };
+  document.getElementById('users-tbody').innerHTML = filtered.length
+    ? filtered.map(u => `
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div class="avatar" style="width:32px;height:32px;font-size:0.78rem;flex-shrink:0;">${u.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2)}</div>
+              <span style="font-weight:600;">${escHtml(u.name)}</span>
+            </div>
+          </td>
+          <td style="color:var(--text-muted);">${escHtml(u.email)}</td>
+          <td><span class="badge badge-${u.role}">${roleEmoji[u.role]||''} ${u.role}</span></td>
+          <td style="font-size:0.82rem;color:var(--text-muted);">${new Date(u.created_at).toLocaleDateString('fr-FR')}</td>
+          <td>
+            ${u.role !== 'admin'
+              ? `<button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id}, '${escHtml(u.name)}')">Supprimer</button>`
+              : '<span style="color:var(--text-muted);font-size:0.8rem;">Protégé</span>'}
+          </td>
+        </tr>
+      `).join('')
+    : `<tr><td colspan="5"><div class="empty-state" style="padding:40px;"><span class="empty-icon">👥</span><h3>Aucun utilisateur</h3></div></td></tr>`;
+}
+
+async function deleteUser(id, name) {
+  if (!confirm(`Supprimer le compte de "${name}" ?`)) return;
+  try {
+    await api.delete(`/api/admin/users/${id}`);
+    allUsers = allUsers.filter(u => u.id !== id);
+    renderUsers();
+    toast(`Utilisateur "${name}" supprimé`);
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ---- MARKETS ----
+async function loadAdminMarkets() {
+  try {
+    allMarkets = await api.get('/api/markets');
+    const grid = document.getElementById('markets-admin-grid');
+    const mEmoji = ['🥬', '🐟', '🍅', '🌽', '🛒', '🥩'];
+    grid.innerHTML = allMarkets.map((m, i) => `
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <div style="font-size:2rem;">${mEmoji[i%mEmoji.length]}</div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-secondary btn-sm" style="padding:4px 8px;" onclick="editMarket(${m.id})">✏️</button>
+            <button class="btn btn-danger btn-sm" style="padding:4px 8px;" onclick="deleteMarket(${m.id}, '${escHtml(m.name)}')">🗑️</button>
+          </div>
+        </div>
+        <div class="card-title">${escHtml(m.name)}</div>
+        <div style="font-size:0.82rem; color:var(--text-muted); margin-bottom:4px;">📍 ${escHtml(m.location)}</div>
+        <div style="font-size:0.82rem; color:var(--text-muted); margin-bottom:16px;">⏰ ${escHtml(m.opening_hours||'')}</div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+           <button class="btn btn-primary btn-sm btn-full" onclick="openProductModal(${m.id}, '${escHtml(m.name)}')">+ Ajouter un produit</button>
+           <button class="btn btn-secondary btn-sm btn-full" onclick="viewMarketProducts(${m.id}, '${escHtml(m.name)}')">📦 Voir les produits</button>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) { toast('Erreur: ' + e.message, 'error'); }
+}
+
+function openMarketModal() { 
+  document.getElementById('market-modal-title').textContent = "🛵 Nouveau marché";
+  document.getElementById('m-id').value = "";
+  document.getElementById('m-name').value = "";
+  document.getElementById('m-loc').value = "";
+  document.getElementById('m-desc').value = "";
+  document.getElementById('m-hours').value = "";
+  document.getElementById('btn-save-market').textContent = "Créer le marché";
+  currentEditMarketId = null;
+  openModal('market-modal'); 
+}
+
+function editMarket(id) {
+  const m = allMarkets.find(x => x.id === id);
+  if (!m) return;
+  document.getElementById('market-modal-title').textContent = "✏️ Modifier le marché";
+  document.getElementById('m-id').value = m.id;
+  document.getElementById('m-name').value = m.name;
+  document.getElementById('m-loc').value = m.location;
+  document.getElementById('m-desc').value = m.description || "";
+  document.getElementById('m-hours').value = m.opening_hours || "";
+  document.getElementById('btn-save-market').textContent = "Enregistrer les modifications";
+  currentEditMarketId = id;
+  openModal('market-modal');
+}
+
+async function deleteMarket(id, name) {
+  if (!confirm(`Supprimer le marché "${name}" ?`)) return;
+  try {
+    await api.delete(`/api/admin/markets/${id}`);
+    toast(`Marché "${name}" supprimé`);
+    loadAdminMarkets();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function saveMarket() {
+  const payload = {
+    name: document.getElementById('m-name').value,
+    location: document.getElementById('m-loc').value,
+    description: document.getElementById('m-desc').value,
+    opening_hours: document.getElementById('m-hours').value
+  };
+  try {
+    if (currentEditMarketId) {
+      await api.put(`/api/admin/markets/${currentEditMarketId}`, payload);
+      toast('Marché mis à jour !');
+    } else {
+      await api.post('/api/admin/markets', payload);
+      toast('Marché ajouté !');
+    }
+    closeModal('market-modal');
+    loadAdminMarkets();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+let activeMarketProductsId = null;
+async function viewMarketProducts(marketId, marketName) {
+  // We can just open a generic section or a simple list in a card.
+  // For simplicity, let's keep it in the markets grid section but replace the grid with product list.
+  try {
+    const products = await api.get(`/api/products?market_id=${marketId}`);
+    const grid = document.getElementById('markets-admin-grid');
+    grid.innerHTML = `
+      <div style="grid-column: 1 / -1; margin-bottom:16px;">
+        <button class="btn btn-secondary btn-sm" onclick="loadAdminMarkets()">← Retour aux marchés</button>
+        <h2 style="margin-top:16px;">Produits de ${escHtml(marketName)}</h2>
+      </div>
+      ${products.map(p => `
+        <div class="card" style="padding:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <div style="font-weight:700;">${escHtml(p.name)}</div>
+              <div style="color:var(--accent2); font-weight:800; font-size:1.1rem;">${p.price.toLocaleString()} F</div>
+              <div style="font-size:0.8rem; color:var(--text-muted);">${escHtml(p.unit)} • ${escHtml(p.category)}</div>
+            </div>
+            <div style="display:flex; gap:6px;">
+               <button class="btn btn-secondary btn-sm" padding="4px 8px;" onclick='editProduct(${JSON.stringify(p).replace(/'/g, "&apos;")})'>✏️</button>
+               <button class="btn btn-danger btn-sm" padding="4px 8px;" onclick="deleteProduct(${p.id}, '${escHtml(p.name)}', ${marketId}, '${escHtml(marketName)}')">🗑️</button>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+      ${!products.length ? '<div style="grid-column: 1 / -1; text-align:center; padding:40px; color:var(--text-muted);">Aucun produit dans ce marché</div>' : ''}
+    `;
+  } catch(e) { toast('Erreur produits: ' + e.message, 'error'); }
+}
+
+function openProductModal(marketId, marketName) {
+  addProductMarketId = marketId;
+  document.getElementById('product-modal-title').textContent = `+ Produit — ${marketName}`;
+  document.getElementById('p-id').value = "";
+  document.getElementById('p-name').value = "";
+  document.getElementById('p-price').value = "";
+  document.getElementById('p-unit').value = "";
+  document.getElementById('p-cat').value = "";
+  document.getElementById('btn-save-product').textContent = "Ajouter";
+  currentEditProductId = null;
+  openModal('product-modal');
+}
+
+function editProduct(p) {
+  currentEditProductId = p.id;
+  document.getElementById('product-modal-title').textContent = `✏️ Modifier — ${p.name}`;
+  document.getElementById('p-id').value = p.id;
+  document.getElementById('p-name').value = p.name;
+  document.getElementById('p-price').value = p.price;
+  document.getElementById('p-unit').value = p.unit;
+  document.getElementById('p-cat').value = p.category;
+  document.getElementById('btn-save-product').textContent = "Enregistrer";
+  openModal('product-modal');
+}
+
+async function deleteProduct(id, name, marketId, marketName) {
+  if (!confirm(`Supprimer le produit "${name}" ?`)) return;
+  try {
+    await api.delete(`/api/admin/products/${id}`);
+    toast(`Produit "${name}" supprimé`);
+    viewMarketProducts(marketId, marketName);
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function saveProduct() {
+  const payload = {
+    name: document.getElementById('p-name').value,
+    price: parseFloat(document.getElementById('p-price').value) || 0,
+    unit: document.getElementById('p-unit').value || 'pièce',
+    category: document.getElementById('p-cat').value || 'Autres'
+  };
+  try {
+    if (currentEditProductId) {
+      await api.put(`/api/admin/products/${currentEditProductId}`, payload);
+      toast('Produit mis à jour !');
+    } else {
+      await api.post(`/api/admin/markets/${addProductMarketId}/products`, payload);
+      toast('Produit ajouté !');
+    }
+    closeModal('product-modal');
+    // If we're viewing a list, we might want to refresh it. 
+    // For now market management is simpler if it just reloads the markets grid or we handle view refresh.
+    loadAdminMarkets(); 
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ---- ASSIGN ----
+function openAssignModal(orderId) {
+  assignOrderId = orderId;
+  document.getElementById('assign-order-id').textContent = orderId;
+  const sel = document.getElementById('courier-select');
+  sel.innerHTML = allCouriers.length
+    ? allCouriers.map(c => `<option value="${c.id}">${escHtml(c.name)} (${escHtml(c.email)})</option>`).join('')
+    : '<option disabled>Aucun coursier disponible</option>';
+  openModal('assign-modal');
+}
+
+async function confirmAssign() {
+  const courierId = parseInt(document.getElementById('courier-select').value);
+  if (!courierId) { toast('Sélectionnez un coursier', 'error'); return; }
+  try {
+    const res = await api.post(`/api/admin/orders/${assignOrderId}/assign`, { courier_id: courierId });
+    closeModal('assign-modal');
+    toast(res.message);
+    allAdminOrders = [];
+    loadAdminOrders();
+    loadOverview();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+loadOverview();
+</script>
+</body>
+</html>

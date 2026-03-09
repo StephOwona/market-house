@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Market House — Catalogue produits</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+<!-- CART TOGGLE -->
+<button class="cart-toggle" onclick="toggleCart()" id="cart-toggle-btn">
+  🛒
+  <span class="cart-badge hidden" id="cart-badge">0</span>
+</button>
+
+<!-- CART PANEL -->
+<div class="cart-panel" id="cart-panel">
+  <div class="cart-header">
+    <h3>🛒 Mon panier</h3>
+    <button class="btn btn-sm btn-secondary" onclick="toggleCart()">✕ Fermer</button>
+  </div>
+  <div class="cart-items" id="cart-items-list">
+    <div class="empty-state" style="padding:40px 20px;">
+      <span class="empty-icon">🛒</span>
+      <h3>Panier vide</h3>
+      <p>Ajoutez des produits</p>
+    </div>
+  </div>
+  <div class="cart-footer">
+    <div class="cart-total">
+      <span>Total estimé</span>
+      <span id="cart-total">0 FCFA</span>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Note / instructions</label>
+      <textarea class="form-control" id="order-notes" placeholder="Ex: Choisir des tomates bien mûres…" rows="2"></textarea>
+    </div>
+    <button class="btn btn-success btn-full" id="submit-btn" onclick="submitOrder()" style="font-size:1.1rem; padding:16px; box-shadow:0 8px 24px rgba(16,185,129,0.3);">
+      ✅ Valider ma course
+    </button>
+  </div>
+</div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="/client/dashboard.html" class="navbar-brand"><span>🛵</span> Market House</a>
+    <div class="navbar-right">
+      <button class="btn btn-secondary btn-sm" onclick="toggleTheme()" title="Changer de thème" style="font-size:1.1rem; padding:4px 8px;">🌓</button>
+      <div class="navbar-user">
+        <div class="avatar" id="nav-avatar"></div>
+        <span id="nav-name">—</span>
+        <span class="badge badge-client">Client</span>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="logout()">Déconnexion</button>
+    </div>
+  </div>
+</nav>
+
+<!-- MOBILE BOTTOM NAVIGATION -->
+<div class="mobile-bottom-nav">
+  <a href="/client/dashboard.html" class="mobile-nav-item active">
+    <span class="mobile-nav-icon">🏪</span>
+    <span>Marchés</span>
+  </a>
+  <a href="/client/dashboard.html" class="mobile-nav-item" onclick="sessionStorage.setItem('goto_orders', 'true');">
+    <span class="mobile-nav-icon">📋</span>
+    <span>Commandes</span>
+  </a>
+  <button class="mobile-nav-item" onclick="toggleTheme()" title="Thème">
+    <span class="mobile-nav-icon">🌓</span>
+    <span>Thème</span>
+  </button>
+  <button class="mobile-nav-item" onclick="logout()" style="color:var(--danger)">
+    <span class="mobile-nav-icon">🚪</span>
+    <span>Quitter</span>
+  </button>
+</div>
+
+<div class="page-hero" id="market-hero">
+  <a href="/client/dashboard.html" style="font-size:0.85rem; color:var(--text-muted); display:inline-flex; align-items:center; gap:6px; margin-bottom:12px; text-decoration:none;">← Retour aux marchés</a>
+  <h1 id="market-name">Chargement…</h1>
+  <p id="market-loc" style="color:var(--text-muted);">📍 —</p>
+</div>
+
+<div style="display:flex; gap:0; margin-right: 0px;">
+  <!-- CATALOG -->
+  <div style="flex:1; padding:28px 32px;">
+    <div class="catalog">
+      <!-- SIDEBAR CATEGORIES -->
+      <div class="catalog-sidebar">
+        <div class="card" style="padding:16px;">
+          <div style="font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); margin-bottom:12px;">Catégories</div>
+          <div id="category-list"></div>
+        </div>
+      </div>
+      <!-- PRODUCTS -->
+      <div class="catalog-main">
+        <div id="products-container">
+          <div style="text-align:center; padding:60px; color:var(--text-muted)">
+            <span class="spinner" style="width:32px;height:32px;border-width:3px;"></span>
+            <p style="margin-top:12px;">Chargement des produits…</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ORDER SUCCESS MODAL -->
+<div class="modal-overlay" id="success-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>✅ Commande soumise !</h3>
+      <button class="modal-close" onclick="document.getElementById('success-modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body" style="text-align:center; padding-top:16px;">
+      <div style="font-size:4rem; margin-bottom:16px;">🎉</div>
+      <p id="success-message" style="color:var(--text-muted); margin-bottom:24px;">Votre commande a été envoyée au marché.</p>
+      <div id="order-confirm-details" style="background:var(--card); border:1px solid var(--card-border); border-radius:10px; padding:16px; text-align:left; margin-bottom:20px;"></div>
+    </div>
+    <div class="modal-footer">
+      <a href="/client/dashboard.html" class="btn btn-secondary">← Retour au Mboa</a>
+      <button class="btn btn-primary" onclick="location.reload()">Nouvelle course</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+const user = requireAuth('client');
+if (user) {
+  const initials = user.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('nav-avatar').textContent = initials;
+  document.getElementById('nav-name').textContent = user.name;
+}
+
+const marketId = sessionStorage.getItem('mh_market_id');
+const marketName = sessionStorage.getItem('mh_market_name');
+if (!marketId) window.location.href = '/client/dashboard.html';
+
+const cart = {};
+let allProducts = {};
+
+function escHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function toast(msg, type='success') {
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.innerHTML = `<span>${type==='success'?'✅':type==='error'?'❌':'ℹ️'}</span> ${msg}`;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+const productEmoji = {
+  'Fruits & Légumes': '🥬', 'Poissons & Viandes': '🐟', 'Céréales & Féculents': '🌾',
+  'Épicerie': '🛒', 'Épices': '🌶️', 'Boissons & Infusions': '☕', 'Textile': '👘',
+  'Hygiène': '🧴', 'Boulangerie': '🥖', 'Produits laitiers': '🥛',
+  'Œufs & Produits frais': '🥚', 'Boissons': '💧', 'Ménager': '🧹', 'Autres': '📦'
+};
+
+const editOrderId = sessionStorage.getItem('mh_edit_order_id');
+if (editOrderId) {
+  try {
+    const items = JSON.parse(sessionStorage.getItem('mh_edit_order_items') || '[]');
+    items.forEach(it => {
+      // Find matching product in allProducts logic will happen inside loadProducts
+      // for now just store the desired qty. We need product IDs not names ideally,
+      // but the dashboard only sent names. Wait, let's look at `loadProducts`
+    });
+  } catch(e) {}
+}
+
+async function loadProducts() {
+  try {
+    const data = await api.get(`/api/markets/${marketId}/products`);
+    document.getElementById('market-name').textContent = data.market.name;
+    document.getElementById('market-loc').textContent = '📍 ' + data.market.location;
+
+    data.products.forEach(p => allProducts[p.id] = p);
+
+    const catList = document.getElementById('category-list');
+    const container = document.getElementById('products-container');
+    const cats = Object.keys(data.categories);
+
+    catList.innerHTML = cats.map((cat, i) => `
+      <div class="category-item ${i===0?'active':''}" onclick="scrollToCategory('cat-${escHtml(cat)}', this)">
+        ${productEmoji[cat]||'📦'} ${escHtml(cat)}
+        <span style="float:right; font-size:0.78rem; color:var(--text-muted);">${data.categories[cat].length}</span>
+      </div>
+    `).join('');
+
+    container.innerHTML = cats.map(cat => `
+      <div id="cat-${escHtml(cat)}" style="margin-bottom:36px;">
+        <h2 style="font-size:1rem; font-weight:700; margin-bottom:16px; color:var(--text-muted); display:flex; align-items:center; gap:8px;">
+          <span>${productEmoji[cat]||'📦'}</span> ${escHtml(cat)}
+        </h2>
+        <div class="product-grid">
+          ${data.categories[cat].map(p => `
+            <div class="product-card" id="pc-${p.id}">
+              <span class="product-emoji">${productEmoji[p.category]||'📦'}</span>
+              <div class="product-name">${escHtml(p.name)}</div>
+              <div class="product-price">${p.price.toLocaleString()} F</div>
+              <div class="product-unit">/ ${escHtml(p.unit)}</div>
+              <div style="margin-top:12px;" id="ctrl-${p.id}">
+                <button class="btn btn-primary btn-sm btn-full" style="font-size:0.8rem;" onclick="addToCart(${p.id})">+ Ajouter</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+
+    // Pre-fill Edit Cart
+    if (editOrderId) {
+      document.getElementById('market-hero').innerHTML += `<div style="margin-top:8px; display:inline-block; background:rgba(245,158,11,0.2); color:var(--warning); padding:4px 12px; border-radius:50px; font-size:0.8rem; font-weight:700;">✏️ Modification de la commande #${editOrderId}</div>`;
+      document.getElementById('submit-btn').innerHTML = '💾 Enregistrer les modifications';
+      
+      const editItems = JSON.parse(sessionStorage.getItem('mh_edit_order_items') || '[]');
+      editItems.forEach(it => {
+        // Find product ID by name (since dashboard only had name)
+        const pId = Object.keys(allProducts).find(k => allProducts[k].name === it.product);
+        if (pId) {
+          cart[pId] = it.quantity;
+          updateQtyControl(pId);
+        }
+      });
+      updateCartPanel();
+      if (editItems.length) toggleCart();
+    }
+  } catch(e) {
+    toast('Erreur: ' + e.message, 'error');
+  }
+}
+
+function scrollToCategory(id, el) {
+  document.querySelectorAll('.category-item').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(id)?.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function addToCart(id) {
+  if (!cart[id]) cart[id] = 0;
+  cart[id]++;
+  updateQtyControl(id);
+  updateCartPanel();
+  toast(`${allProducts[id].name} ajouté`, 'success');
+}
+
+function updateQtyControl(id) {
+  const ctrl = document.getElementById('ctrl-' + id);
+  const qty = cart[id] || 0;
+  if (qty === 0) {
+    ctrl.innerHTML = `<button class="btn btn-primary btn-sm btn-full" style="font-size:0.8rem;" onclick="addToCart(${id})">+ Ajouter</button>`;
+  } else {
+    ctrl.innerHTML = `<div class="qty-control">
+      <button class="qty-btn" onclick="changeQty(${id}, -1)">−</button>
+      <span class="qty-value">${qty}</span>
+      <button class="qty-btn" onclick="changeQty(${id}, 1)">+</button>
+    </div>`;
+  }
+}
+
+function changeQty(id, delta) {
+  cart[id] = (cart[id] || 0) + delta;
+  if (cart[id] <= 0) delete cart[id];
+  updateQtyControl(id);
+  updateCartPanel();
+}
+
+function updateCartPanel() {
+  const items = Object.keys(cart);
+  const badge = document.getElementById('cart-badge');
+  const total_count = items.reduce((s, id) => s + cart[id], 0);
+
+  if (total_count > 0) {
+    badge.textContent = total_count;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+
+  const list = document.getElementById('cart-items-list');
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-state" style="padding:40px 20px;"><span class="empty-icon">🛒</span><h3>Panier vide</h3></div>';
+    document.getElementById('cart-total').textContent = '0 FCFA';
+    return;
+  }
+
+  let total = 0;
+  list.innerHTML = items.map(id => {
+    const p = allProducts[id];
+    const qty = cart[id];
+    const subtotal = p.price * qty;
+    total += subtotal;
+    return `
+      <div class="cart-item">
+        <div style="font-size:1.5rem;">${productEmoji[p.category]||'📦'}</div>
+        <div class="cart-item-info">
+          <div class="cart-item-name">${escHtml(p.name)}</div>
+          <div class="cart-item-price">${qty} × ${p.price.toLocaleString()} F = ${subtotal.toLocaleString()} F</div>
+        </div>
+        <button onclick="changeQty(${id}, -1)" style="background:rgba(239,68,68,0.1); border:none; color:var(--danger); cursor:pointer; border-radius:6px; padding:4px 8px; font-size:1rem;">✕</button>
+      </div>
+    `;
+  }).join('');
+  document.getElementById('cart-total').textContent = total.toLocaleString() + ' FCFA';
+}
+
+function toggleCart() {
+  document.getElementById('cart-panel').classList.toggle('open');
+}
+
+async function submitOrder() {
+  const items = Object.keys(cart);
+  if (!items.length) {
+    showCartError('Votre panier est vide !');
+    return;
+  }
+
+  const btn = document.getElementById('submit-btn');
+  btn.innerHTML = '<span class="spinner"></span>&nbsp; Envoi en cours…';
+  btn.disabled = true;
+  clearCartError();
+
+  try {
+    const payload = {
+      market_id: parseInt(marketId),
+      notes: document.getElementById('order-notes').value,
+      items: items.map(id => ({ product_id: parseInt(id), quantity: cart[id] }))
+    };
+
+    if (editOrderId) {
+        // UPDATE EXISTING ORDER
+        const res = await api.put(`/api/orders/${editOrderId}/items`, payload);
+        sessionStorage.removeItem('mh_edit_order_id');
+        sessionStorage.removeItem('mh_edit_order_items');
+        document.getElementById('cart-panel').classList.remove('open');
+        document.getElementById('success-message').innerHTML = `Les modifications de la commande <strong>#${editOrderId}</strong> ont été enregistrées avec succès.`;
+        document.getElementById('order-confirm-details').innerHTML = `
+          <div style="font-size:1.4rem; font-weight:800; color:var(--accent2); margin-top:4px;">Nouveau total : ${res.total_estimate?.toLocaleString()} FCFA</div>
+        `;
+        document.getElementById('success-modal').classList.add('open');
+    } else {
+        // CREATE NEW ORDER
+        const res = await api.post('/api/orders', payload);
+        
+        // Close cart panel first, then show success modal
+        document.getElementById('cart-panel').classList.remove('open');
+        const courierMsg = res.order.courier_name 
+          ? `Génial ! Votre course a été envoyée directement à <strong>${res.order.courier_name}</strong> qui s'en occupe tout de suite.`
+          : `Votre course est validée ! Nous cherchons un coursier disponible.`;
+        
+        document.getElementById('success-message').innerHTML = courierMsg;
+
+        document.getElementById('order-confirm-details').innerHTML = `
+          <div style="font-size:0.9rem; color:var(--text-muted);">Course #${res.order.id}</div>
+          <div style="font-size:1.4rem; font-weight:800; color:var(--accent2); margin-top:4px;">${res.order.total_estimate?.toLocaleString()} FCFA</div>
+          <div style="margin-top:8px; font-size:0.85rem;">Statut : <span class="badge ${res.order.courier_name ? 'badge-assigned' : 'badge-pending'}">${res.order.courier_name ? 'Assignée' : 'En attente'}</span></div>
+        `;
+        document.getElementById('success-modal').classList.add('open');
+    }
+    
+    Object.keys(cart).forEach(k => delete cart[k]);
+    updateCartPanel();
+  } catch(e) {
+    showCartError('❌ ' + e.message);
+  } finally {
+    // ALWAYS re-enable button regardless of success or failure
+    btn.innerHTML = '✅ Valider ma course';
+    btn.disabled = false;
+  }
+}
+
+function showCartError(msg) {
+  let el = document.getElementById('cart-error-msg');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'cart-error-msg';
+    el.style.cssText = 'background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;padding:10px 14px;border-radius:8px;font-size:0.85rem;margin-bottom:10px;';
+    document.getElementById('submit-btn').insertAdjacentElement('beforebegin', el);
+  }
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function clearCartError() {
+  const el = document.getElementById('cart-error-msg');
+  if (el) el.style.display = 'none';
+}
+
+loadProducts();
+</script>
+</body>
+</html>
