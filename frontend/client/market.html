@@ -7,17 +7,29 @@
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
-<!-- CART TOGGLE -->
-<button class="cart-toggle" onclick="toggleCart()" id="cart-toggle-btn">
-  🛒
-  <span class="cart-badge hidden" id="cart-badge">0</span>
-</button>
+<!-- STICKY CART BAR (MOBILE/TABLET) -->
+<div class="sticky-cart-bar hidden" id="sticky-cart-bar" onclick="toggleCart()">
+  <div class="sticky-cart-info">
+    <span class="sticky-cart-icon">🛒</span>
+    <span id="sticky-cart-count">0 articles</span>
+  </div>
+  <div class="sticky-cart-total">
+    <span id="sticky-cart-price">0 F</span>
+    <button class="btn btn-primary btn-sm" style="margin-left:12px; font-weight:700;">Valider →</button>
+  </div>
+</div>
 
-<!-- CART PANEL -->
+<!-- CHECKOUT PANEL (FULL SCREEN ON MOBILE) -->
 <div class="cart-panel" id="cart-panel">
   <div class="cart-header">
-    <h3>🛒 Mon panier</h3>
-    <button class="btn btn-sm btn-secondary" onclick="toggleCart()">✕ Fermer</button>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <span style="font-size:1.5rem;">🛍️</span>
+      <div>
+        <h3 style="margin:0;">Finaliser ma course</h3>
+        <p style="margin:0; font-size:0.75rem; color:var(--text-muted);">Vérifiez vos articles avant de valider</p>
+      </div>
+    </div>
+    <button class="modal-close" onclick="toggleCart()" style="font-size:1.8rem;">✕</button>
   </div>
   <div class="cart-items" id="cart-items-list">
     <div class="empty-state" style="padding:40px 20px;">
@@ -287,18 +299,29 @@ function updateCartPanel() {
   const items = Object.keys(cart);
   const badge = document.getElementById('cart-badge');
   const mobBadge = document.getElementById('mob-cart-badge');
+  const stickyBar = document.getElementById('sticky-cart-bar');
+  const stickyCount = document.getElementById('sticky-cart-count');
+  const stickyPrice = document.getElementById('sticky-cart-price');
+  
   const total_count = items.reduce((s, id) => s + cart[id], 0);
 
   if (total_count > 0) {
-    badge.textContent = total_count;
-    badge.classList.remove('hidden');
+    if (badge) {
+      badge.textContent = total_count;
+      badge.classList.remove('hidden');
+    }
     if (mobBadge) {
       mobBadge.textContent = total_count;
       mobBadge.classList.remove('hidden');
     }
+    if (stickyBar) {
+      stickyBar.classList.remove('hidden');
+      stickyCount.textContent = `${total_count} article${total_count > 1 ? 's' : ''}`;
+    }
   } else {
-    badge.classList.add('hidden');
+    if (badge) badge.classList.add('hidden');
     if (mobBadge) mobBadge.classList.add('hidden');
+    if (stickyBar) stickyBar.classList.add('hidden');
   }
 
   const list = document.getElementById('cart-items-list');
@@ -325,7 +348,9 @@ function updateCartPanel() {
       </div>
     `;
   }).join('');
-  document.getElementById('cart-total').textContent = total.toLocaleString() + ' FCFA';
+  const formattedTotal = total.toLocaleString() + ' FCFA';
+  document.getElementById('cart-total').textContent = formattedTotal;
+  if (stickyPrice) stickyPrice.textContent = formattedTotal;
 }
 
 function toggleCart() {

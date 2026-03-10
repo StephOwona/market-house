@@ -69,8 +69,12 @@
             <div class="onboard-text">Suivez le coursier<br><span style="color:var(--text-muted)">en temps réel</span></div>
           </div>
         </div>
+        </div>
       </div>
       <div class="main">
+        <!-- ACTIVE ORDER WIDGET (DYNAMIC) -->
+        <div id="active-order-highlight"></div>
+
         <div id="markets-grid" class="grid grid-3">
           <div style="text-align:center; padding:60px; color:var(--text-muted)">
             <span class="spinner" style="width:32px;height:32px;border-width:3px;"></span>
@@ -442,6 +446,7 @@ async function loadOrders() {
   try {
     const orders = await api.get('/api/orders');
     allClientOrders = orders; // Save globally
+    updateActiveOrderHighlight();
     if (!orders.length) {
       container.innerHTML = `<div class="empty-state"><span class="empty-icon">🛍️</span><h3>C'est bien calme ici...</h3><p>Qu\'est-ce qui vous ferait plaisir aujourd'hui ? Faites votre premier marché !</p><a href="#" class="btn btn-primary" style="margin-top:24px; padding:12px 32px;" onclick="showSection('markets')">Découvrir les marchés</a></div>`;
       return;
@@ -519,6 +524,34 @@ async function loadOrders() {
   } catch(e) {
     container.innerHTML = `<div class="empty-state"><span class="empty-icon">⚠️</span><h3>Erreur : ${e.message}</h3></div>`;
   }
+}
+
+function updateActiveOrderHighlight() {
+  const container = document.getElementById('active-order-highlight');
+  // Find the first order that is NOT completed
+  const activeOrder = allClientOrders.find(o => o.status !== 'completed');
+  
+  if (!activeOrder) {
+    container.innerHTML = '';
+    return;
+  }
+  
+  container.innerHTML = `
+    <div class="active-order-widget" onclick="openTrackingModal(${activeOrder.id})">
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div class="order-pulse"></div>
+        <div>
+          <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); font-weight:700; margin-bottom:4px;">Course en cours</div>
+          <div style="font-weight:800; font-size:1.1rem;">${escHtml(activeOrder.market)} — #${activeOrder.id}</div>
+          <div style="font-size:0.85rem; color:var(--accent2); font-weight:600;">Statut : ${statusEmoji[activeOrder.status]} ${statusLabels[activeOrder.status]}</div>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-weight:800; font-size:1.2rem; color:var(--text);">${activeOrder.total_estimate?.toLocaleString()} F</div>
+        <button class="btn btn-primary btn-sm" style="margin-top:8px;">Suivre 📍</button>
+      </div>
+    </div>
+  `;
 }
 
 function showSection2(name) {
@@ -670,6 +703,7 @@ function closeCartModal() {
 
 updateCartBadge();
 loadMarkets();
+loadOrders(); // Load orders to show active highlights
 
 // Handle returning to specific tabs
 if (sessionStorage.getItem('goto_orders') === 'true') {
