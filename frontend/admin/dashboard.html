@@ -113,6 +113,30 @@
   </div>
 </div>
 
+<!-- MOBILE BOTTOM NAVIGATION -->
+<div class="mobile-bottom-nav">
+  <button class="mobile-nav-item active" onclick="showSectionMobile('overview', this)">
+    <span class="mobile-nav-icon">📊</span>
+    <span>Dashboard</span>
+  </button>
+  <button class="mobile-nav-item" onclick="showSectionMobile('orders', this)">
+    <span class="mobile-nav-icon">📋</span>
+    <span>Courses</span>
+  </button>
+  <button class="mobile-nav-item" onclick="showSectionMobile('users', this)">
+    <span class="mobile-nav-icon">👥</span>
+    <span>Membres</span>
+  </button>
+  <button class="mobile-nav-item" onclick="showSectionMobile('markets', this)">
+    <span class="mobile-nav-icon">🏪</span>
+    <span>Marchés</span>
+  </button>
+  <button class="mobile-nav-item" onclick="logout()" style="color:var(--danger)">
+    <span class="mobile-nav-icon">🚪</span>
+    <span>Quitter</span>
+  </button>
+</div>
+
 <!-- ASSIGN MODAL -->
 <div class="modal-overlay" id="assign-modal">
   <div class="modal">
@@ -203,9 +227,19 @@ function showSection(name) {
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
   document.getElementById('section-' + name).classList.add('active');
   document.getElementById('nav-' + name).classList.add('active');
+  
+  // Sync mobile nav
+  document.querySelectorAll('.mobile-nav-item').forEach(l => l.classList.remove('active'));
+  const mobL = Array.from(document.querySelectorAll('.mobile-nav-item')).find(el => el.getAttribute('onclick').includes(name));
+  if (mobL) mobL.classList.add('active');
+
   if (name === 'orders' && !allAdminOrders.length) loadAdminOrders();
   if (name === 'users' && !allUsers.length) loadUsers();
   if (name === 'markets') loadAdminMarkets();
+}
+
+function showSectionMobile(name, element) {
+  showSection(name);
 }
 
 // ---- OVERVIEW ----
