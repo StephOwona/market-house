@@ -32,7 +32,10 @@
 
     <!-- ===== OVERVIEW ===== -->
     <div id="section-overview" class="section active">
-      <div class="page-hero"><h1>📊 Tableau de bord</h1><p>Vue d'ensemble de la plateforme</p></div>
+      <div class="page-hero">
+        <h1 id="welcome-msg">📊 Tableau de bord</h1>
+        <p>Vue d'ensemble de la plateforme. Tout semble fonctionner correctement !</p>
+      </div>
       <div class="main">
         <div class="grid grid-4" style="margin-bottom:32px;" id="stats-grid">
           <div class="stat-card"><div class="stat-icon" style="background:rgba(59,130,246,0.12);color:var(--info);">👥</div><div><div class="stat-value" id="st-users">—</div><div class="stat-label">Utilisateurs</div></div></div>
@@ -175,6 +178,7 @@ if (user) {
   const init = user.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
   document.getElementById('sb-avatar').textContent = init;
   document.getElementById('sb-name').textContent = user.name;
+  document.getElementById('welcome-msg').textContent = `📊 Bonjour, Admin ${user.name.split(' ')[0]} !`;
 }
 
 let allAdminOrders = [], allUsers = [], allCouriers = [], allMarkets = [];

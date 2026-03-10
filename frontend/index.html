@@ -7,85 +7,116 @@
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
-<div class="auth-wrapper">
-  <div class="auth-box">
-    <div class="auth-logo">
-      <div style="font-size:3rem; margin-bottom:8px;">🛵</div>
-      <h1>Market House</h1>
-      <p>Faites votre marché depuis chez vous</p>
-    </div>
-
-    <div class="auth-tabs">
-      <button class="auth-tab active" id="tab-login" onclick="showTab('login')">Connexion</button>
-      <button class="auth-tab" id="tab-register" onclick="showTab('register')">Créer un compte</button>
-    </div>
-
-    <!-- LOGIN -->
-    <div id="panel-login">
-      <div id="login-alert" class="alert alert-error hidden"></div>
-      <form id="login-form" onsubmit="doLogin(event)">
-        <div class="form-group">
-          <label class="form-label">Adresse email</label>
-          <input id="l-email" type="email" class="form-control" placeholder="votre@email.com" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Mot de passe</label>
-          <div style="position:relative;">
-            <input id="l-password" type="password" class="form-control" placeholder="••••••••" required style="padding-right:40px;" />
-            <span class="pwd-toggle" onclick="togglePassword('l-password')" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:var(--text-muted);">👁</span>
-          </div>
-        </div>
-        <button type="submit" class="btn btn-primary btn-full" id="login-btn">
-          <span>Se connecter</span>
-        </button>
-      </form>
-      <div class="divider">ou</div>
-      <p style="text-align:center; font-size:0.88rem; color:var(--text-muted)">
-        Pas encore de compte ? <a href="#" onclick="showTab('register')">Créer un compte</a>
-      </p>
-      <div style="margin-top:20px; padding:14px; background:rgba(108,99,255,0.08); border-radius:10px; border:1px solid rgba(108,99,255,0.2);">
-        <p style="font-size:0.8rem; color:var(--text-muted); text-align:center; line-height:1.6;">
-          <strong style="color:var(--accent2);">Compte admin par défaut</strong><br>
-          📧 admin@market.com &nbsp;|&nbsp; 🔑 Admin123!
-        </p>
+<div class="landing-page">
+  <div class="navbar">
+    <div class="navbar-inner">
+      <a href="/" class="navbar-brand"><span>🛵</span> Market House</a>
+      <div class="navbar-right">
+        <button class="btn btn-secondary btn-sm" onclick="scrollToAuth()">Se connecter</button>
+        <button class="btn btn-primary btn-sm" onclick="scrollToAuth('register')">S'inscrire</button>
       </div>
     </div>
+  </div>
 
-    <!-- REGISTER -->
-    <div id="panel-register" class="hidden">
-      <div id="reg-alert" class="alert alert-error hidden"></div>
-      <form id="reg-form" onsubmit="doRegister(event)">
-        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:16px;">Choisissez votre rôle :</p>
-        <div class="role-selector">
-          <div class="role-btn selected" onclick="selectRole('client', this)" id="role-client">
-            <span class="role-icon">🛒</span>
-            <div class="role-label">Client</div>
+  <section class="landing-hero">
+    <span class="hero-badge">Nouveau : Livraison en 30 min ⚡</span>
+    <h1>Le marché local,<br><span style="color:var(--accent2);">en un clic.</span></h1>
+    <p>Faites vos courses dans les plus grands marchés du Mboa. Plus besoin de se déplacer, nos coursiers s'occupent de tout pour vous.</p>
+    <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap;">
+      <button class="btn btn-primary" style="padding:16px 32px; font-size:1.1rem;" onclick="scrollToAuth('register')">Commencer mes courses</button>
+      <button class="btn btn-secondary" style="padding:16px 32px; font-size:1.1rem;" onclick="scrollToAuth('login')">Déjà client ? Se connecter</button>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-item">
+        <span class="feature-icon">🥬</span>
+        <h3 class="feature-title">Produits Frais</h3>
+        <p class="feature-desc">Sélectionnés avec soin directement sur les étals de vos marchés préférés.</p>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">🚴</span>
+        <h3 class="feature-title">Livraison Rapide</h3>
+        <p class="feature-desc">Nos coursiers connaissent les raccourcis pour vous livrer au plus vite.</p>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">💰</span>
+        <h3 class="feature-title">Prix du Marché</h3>
+        <p class="feature-desc">Transparence totale sur les prix pratiqués aujourd'hui au marché.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="auth-wrapper" id="auth-section">
+    <div class="auth-box">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login" onclick="showTab('login')">Connexion</button>
+        <button class="auth-tab" id="tab-register" onclick="showTab('register')">Créer un compte</button>
+      </div>
+
+      <!-- LOGIN -->
+      <div id="panel-login">
+        <div id="login-alert" class="alert alert-error hidden"></div>
+        <form id="login-form" onsubmit="doLogin(event)">
+          <div class="form-group">
+            <label class="form-label">Adresse email</label>
+            <input id="l-email" type="email" class="form-control" placeholder="votre@email.com" required />
           </div>
-          <div class="role-btn" onclick="selectRole('courier', this)" id="role-courier">
-            <span class="role-icon">🚴</span>
-            <div class="role-label">Coursier</div>
+          <div class="form-group">
+            <label class="form-label">Mot de passe</label>
+            <div style="position:relative;">
+              <input id="l-password" type="password" class="form-control" placeholder="••••••••" required style="padding-right:40px;" />
+              <span class="pwd-toggle" onclick="togglePassword('l-password')" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:var(--text-muted);">👁</span>
+            </div>
           </div>
+          <button type="submit" class="btn btn-primary btn-full" id="login-btn">
+            <span>Se connecter</span>
+          </button>
+        </form>
+        <div class="divider">ou</div>
+        <div style="margin-top:20px; padding:14px; background:rgba(0,149,102,0.08); border-radius:12px; border:1px solid rgba(0,149,102,0.2);">
+          <p style="font-size:0.8rem; color:var(--text-muted); text-align:center; line-height:1.6;">
+            <strong style="color:var(--accent2);">Compte démo admin</strong><br>
+            📧 admin@market.com &nbsp;|&nbsp; 🔑 Admin123!
+          </p>
         </div>
-        <input type="hidden" id="r-role" value="client" />
-        <div class="form-group">
-          <label class="form-label">Nom complet</label>
-          <input id="r-name" type="text" class="form-control" placeholder="Votre nom" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Adresse email</label>
-          <input id="r-email" type="email" class="form-control" placeholder="votre@email.com" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Mot de passe</label>
-          <div style="position:relative;">
-            <input id="r-password" type="password" class="form-control" placeholder="Minimum 6 caractères" required style="padding-right:40px;" />
-            <span class="pwd-toggle" onclick="togglePassword('r-password')" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:var(--text-muted);">👁</span>
+      </div>
+
+      <!-- REGISTER -->
+      <div id="panel-register" class="hidden">
+        <div id="reg-alert" class="alert alert-error hidden"></div>
+        <form id="reg-form" onsubmit="doRegister(event)">
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:16px;">Choisissez votre rôle :</p>
+          <div class="role-selector">
+            <div class="role-btn selected" onclick="selectRole('client', this)" id="role-client">
+              <span class="role-icon">🛒</span>
+              <div class="role-label" style="margin-top:0;">Client</div>
+            </div>
+            <div class="role-btn" onclick="selectRole('courier', this)" id="role-courier">
+              <span class="role-icon">🚴</span>
+              <div class="role-label" style="margin-top:0;">Coursier</div>
+            </div>
           </div>
-        </div>
-        <button type="submit" class="btn btn-primary btn-full" id="reg-btn">
-          <span>Créer mon compte</span>
-        </button>
-      </form>
+          <input type="hidden" id="r-role" value="client" />
+          <div class="form-group">
+            <label class="form-label">Nom complet</label>
+            <input id="r-name" type="text" class="form-control" placeholder="Votre nom" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Adresse email</label>
+            <input id="r-email" type="email" class="form-control" placeholder="votre@email.com" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mot de passe</label>
+            <div style="position:relative;">
+              <input id="r-password" type="password" class="form-control" placeholder="Minimum 6 caractères" required style="padding-right:40px;" />
+              <span class="pwd-toggle" onclick="togglePassword('r-password')" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:var(--text-muted);">👁</span>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full" id="reg-btn">
+            <span>Créer mon compte</span>
+          </button>
+        </form>
+      </div>
     </div>
   </div>
 </div>
@@ -105,6 +136,11 @@
     document.getElementById('panel-register').classList.toggle('hidden', tab !== 'register');
     document.getElementById('tab-login').classList.toggle('active', tab === 'login');
     document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+  }
+
+  function scrollToAuth(tab = 'login') {
+    showTab(tab);
+    document.getElementById('auth-section').scrollIntoView({ behavior: 'smooth' });
   }
 
   function togglePassword(inputId) {

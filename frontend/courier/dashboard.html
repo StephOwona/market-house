@@ -43,8 +43,8 @@
   <!-- CONTENT -->
   <div class="app-content">
     <div class="page-hero">
-      <h1>🚴 Mes courses assignées</h1>
-      <p>Gérez et mettez à jour vos livraisons en temps réel</p>
+      <h1 id="welcome-msg">🚴 Prêt pour la course ?</h1>
+      <p>Gérez et mettez à jour vos livraisons. Votre efficacité fait notre succès !</p>
     </div>
 
     <!-- STATS -->
@@ -115,6 +115,7 @@ if (user) {
   const init = user.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
   document.getElementById('sb-avatar').textContent = init;
   document.getElementById('sb-name').textContent = user.name;
+  document.getElementById('welcome-msg').textContent = `🚴 Bonne route, ${user.name.split(' ')[0]} !`;
 }
 
 let allOrders = [];

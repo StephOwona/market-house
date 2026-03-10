@@ -43,8 +43,16 @@
     <!-- MARKETS SECTION -->
     <div id="section-markets" class="section active">
       <div class="page-hero">
-        <h1>🛵 Choisissez votre marché</h1>
-        <p>Sélectionnez un marché du Mboa pour voir ses produits et constituer votre panier</p>
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:20px;">
+          <div>
+            <h1 id="welcome-msg">👋 Bonjour !</h1>
+            <p>On fait le marché où aujourd'hui ? Choisissez un marché pour commencer.</p>
+          </div>
+          <div class="search-box" style="position:relative; flex:1; max-width:400px;">
+            <input type="text" class="form-control" placeholder="Rechercher un marché ou un produit..." style="padding-left:44px; border-radius:50px;">
+            <span style="position:absolute; left:16px; top:50%; transform:translateY(-50%); opacity:0.5;">🔍</span>
+          </div>
+        </div>
         
         <!-- ONBOARDING GUIDE -->
         <div class="onboarding-steps">
@@ -206,6 +214,7 @@ if (user) {
   const initials = user.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
   document.getElementById('sb-avatar').textContent = initials;
   document.getElementById('sb-name').textContent = user.name;
+  document.getElementById('welcome-msg').textContent = `👋 Bonjour ${user.name.split(' ')[0]} !`;
 }
 
 function showSection(name) {
@@ -253,7 +262,7 @@ async function loadMarkets() {
     const markets = await api.get('/api/markets');
     const grid = document.getElementById('markets-grid');
     if (!markets.length) {
-      grid.innerHTML = '<div class="empty-state"><span class="empty-icon">🛵</span><h3>Aucun marché disponible</h3></div>';
+      grid.innerHTML = '<div class="empty-state"><span class="empty-icon">🏪</span><h3>Le marché se prépare...</h3><p>Revenez dans quelques instants, nos commerçants s\'installent !</p></div>';
       return;
     }
     const emojis = ['🥬', '🐟', '🍅', '🌽', '🛒', '🥩'];
@@ -411,7 +420,7 @@ async function loadOrders() {
     const orders = await api.get('/api/orders');
     allClientOrders = orders; // Save globally
     if (!orders.length) {
-      container.innerHTML = `<div class="empty-state"><span class="empty-icon">📋</span><h3>Aucune course</h3><p>Passez votre première commande au marché !</p><a href="#" class="btn btn-primary" style="margin-top:16px;" onclick="showSection2('markets')">Choisir un marché</a></div>`;
+      container.innerHTML = `<div class="empty-state"><span class="empty-icon">🛍️</span><h3>C'est bien calme ici...</h3><p>Qu\'est-ce qui vous ferait plaisir aujourd'hui ? Faites votre premier marché !</p><a href="#" class="btn btn-primary" style="margin-top:24px; padding:12px 32px;" onclick="showSection('markets')">Découvrir les marchés</a></div>`;
       return;
     }
     container.innerHTML = orders.map(o => `
