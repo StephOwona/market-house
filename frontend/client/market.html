@@ -67,6 +67,10 @@
     <span class="mobile-nav-icon">📋</span>
     <span>Commandes</span>
   </a>
+  <button class="mobile-nav-item" onclick="toggleCart()">
+    <span class="mobile-nav-icon">🛒</span>
+    <span>Panier <span id="mob-cart-badge" class="badge-mini hidden">0</span></span>
+  </button>
   <button class="mobile-nav-item" onclick="toggleTheme()" title="Thème">
     <span class="mobile-nav-icon">🌓</span>
     <span>Thème</span>
@@ -142,8 +146,12 @@ const marketId = sessionStorage.getItem('mh_market_id');
 const marketName = sessionStorage.getItem('mh_market_name');
 if (!marketId) window.location.href = '/client/dashboard.html';
 
-const cart = {};
+const cart = JSON.parse(sessionStorage.getItem('mh_cart') || '{}');
 let allProducts = {};
+
+function saveCart() {
+  sessionStorage.setItem('mh_cart', JSON.stringify(cart));
+}
 
 function escHtml(str) {
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -247,6 +255,7 @@ function scrollToCategory(id, el) {
 function addToCart(id) {
   if (!cart[id]) cart[id] = 0;
   cart[id]++;
+  saveCart();
   updateQtyControl(id);
   updateCartPanel();
   toast(`${allProducts[id].name} ajouté`, 'success');
@@ -269,6 +278,7 @@ function updateQtyControl(id) {
 function changeQty(id, delta) {
   cart[id] = (cart[id] || 0) + delta;
   if (cart[id] <= 0) delete cart[id];
+  saveCart();
   updateQtyControl(id);
   updateCartPanel();
 }
@@ -276,13 +286,19 @@ function changeQty(id, delta) {
 function updateCartPanel() {
   const items = Object.keys(cart);
   const badge = document.getElementById('cart-badge');
+  const mobBadge = document.getElementById('mob-cart-badge');
   const total_count = items.reduce((s, id) => s + cart[id], 0);
 
   if (total_count > 0) {
     badge.textContent = total_count;
     badge.classList.remove('hidden');
+    if (mobBadge) {
+      mobBadge.textContent = total_count;
+      mobBadge.classList.remove('hidden');
+    }
   } else {
     badge.classList.add('hidden');
+    if (mobBadge) mobBadge.classList.add('hidden');
   }
 
   const list = document.getElementById('cart-items-list');
@@ -367,6 +383,7 @@ async function submitOrder() {
     }
     
     Object.keys(cart).forEach(k => delete cart[k]);
+    saveCart();
     updateCartPanel();
   } catch(e) {
     showCartError('❌ ' + e.message);

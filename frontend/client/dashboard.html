@@ -151,6 +151,10 @@
     <span class="mobile-nav-icon">📋</span>
     <span>Commandes</span>
   </button>
+  <button class="mobile-nav-item" onclick="openCartModal()">
+    <span class="mobile-nav-icon">🛒</span>
+    <span>Panier <span id="mob-cart-badge" class="badge-mini hidden">0</span></span>
+  </button>
   <button class="mobile-nav-item" onclick="showSectionMobile('trends', this)">
     <span class="mobile-nav-icon">🗣️</span>
     <span>Avis</span>
@@ -199,6 +203,25 @@
         <button class="btn btn-primary btn-full" id="btn-edit-order" onclick="openEditOrder()" style="margin-bottom:8px;">✏️ Modifier ma commande</button>
         <button class="btn btn-success btn-full" id="btn-confirm-delivery" onclick="confirmDelivery()" style="display:none;font-weight:700;box-shadow:0 6px 16px rgba(16,185,129,0.3);">✅ Certifier la réception de la livraison</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- CART SUMMARY MODAL -->
+<div class="modal-overlay" id="cart-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🛒 Mon panier actuel</h3>
+      <button class="modal-close" onclick="closeCartModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="cart-summary-content">
+        <!-- Content injected by JS -->
+      </div>
+    </div>
+    <div class="modal-footer" id="cart-modal-footer">
+      <button class="btn btn-secondary" onclick="closeCartModal()">Fermer</button>
+      <a href="/client/market.html" class="btn btn-primary" id="btn-go-to-cart">Aller au marché →</a>
     </div>
   </div>
 </div>
@@ -599,6 +622,53 @@ async function submitTrend(e) {
   }
 }
 
+// ---- CART MODAL (DASHBOARD) ----
+function updateCartBadge() {
+  const cart = JSON.parse(sessionStorage.getItem('mh_cart') || '{}');
+  const total = Object.values(cart).reduce((sum, q) => sum + q, 0);
+  const badge = document.getElementById('mob-cart-badge');
+  if (total > 0) {
+    badge.textContent = total;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+function openCartModal() {
+  const cart = JSON.parse(sessionStorage.getItem('mh_cart') || '{}');
+  const marketName = sessionStorage.getItem('mh_market_name') || 'du marché';
+  const content = document.getElementById('cart-summary-content');
+  const items = Object.keys(cart);
+
+  if (!items.length) {
+    content.innerHTML = `
+      <div class="empty-state" style="padding:20px;">
+        <span class="empty-icon">🛒</span>
+        <p>Votre panier est vide pour le moment.</p>
+      </div>`;
+    document.getElementById('btn-go-to-cart').style.display = 'none';
+  } else {
+    content.innerHTML = `
+      <p style="margin-bottom:12px; font-size:0.9rem; color:var(--text-muted);">Voici vos articles sélectionnés au <strong>${escHtml(marketName)}</strong> :</p>
+      <div style="background:var(--bg3); border-radius:10px; padding:4px;">
+        ${items.map(id => `<div style="padding:10px 14px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; font-size:0.9rem;">
+          <span>• ${cart[id]} article(s)</span>
+          <span style="color:var(--accent2); font-weight:700;">En attente de validation</span>
+        </div>`).join('')}
+      </div>
+      <p style="margin-top:16px; font-size:0.85rem; text-align:center; color:var(--info);">Cliquez ci-dessous pour retourner au marché et finaliser votre commande.</p>
+    `;
+    document.getElementById('btn-go-to-cart').style.display = 'inline-block';
+  }
+  document.getElementById('cart-modal').classList.add('open');
+}
+
+function closeCartModal() {
+  document.getElementById('cart-modal').classList.remove('open');
+}
+
+updateCartBadge();
 loadMarkets();
 
 // Handle returning to specific tabs
